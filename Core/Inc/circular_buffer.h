@@ -29,7 +29,7 @@ extern volatile uint32_t ColorBuffer_Tail;
 extern volatile uint32_t ColorBuffer_Count;
 
 // External reference to current collection interval (defined in main.c)
-extern volatile uint32_t current_collection_interval;
+extern volatile uint32_t timer_interval;
 
 uint8_t UART_RX_IsEmpty(void);
 

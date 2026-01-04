@@ -51,7 +51,6 @@
 
 volatile uint32_t timer_interval = 1000;
 volatile uint32_t timer_counter = 0;
-volatile uint32_t current_collection_interval = 1000; // Current active interval for RDARC calculations
 
 /* USER CODE BEGIN PV */
 TCS34725_Data_t colorData;
@@ -123,31 +122,18 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-
-  // DEBUG: Test if UART works
-  UART_TX_FSend("SYSTEM STARTED - UART TEST\n");
-
   HAL_TIM_Base_Start_IT(&htim3);
   HAL_UART_Receive_IT(&huart2,&UART_RxBuf[0],1);
-  UART_TX_FSend("START\n");
+  UART_TX_FSend("STM INIT\n");
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_RESET);
   while (1)
   {
    //Przetwarzanie znakow ktore przychodza do bufora kolejki UART
     process_protocol_data();
-
-//    TCS34725_ReadRawData(&hi2c1, &colorData);
-
-//    UART_TX_FSend("R: %d G: %d B: %d C: %d\n",colorData.r,colorData.g,colorData.b,colorData.c);
-
-
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

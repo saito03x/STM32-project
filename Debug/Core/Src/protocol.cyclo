@@ -7,8 +7,8 @@
 ../Core/Src/protocol.c:152:9:parse_command	15
 ../Core/Src/protocol.c:205:9:get_command_param_len	7
 ../Core/Src/protocol.c:240:13:parse_frame	78
-../Core/Src/protocol.c:544:10:calculate_frame_crc	4
-../Core/Src/protocol.c:599:6:build_response_frame	12
-../Core/Src/protocol.c:722:6:process_received_frame	20
-../Core/Src/protocol.c:786:6:process_protocol_data	19
-../Core/Src/protocol.c:974:6:process_command	68
+../Core/Src/protocol.c:540:10:calculate_frame_crc	4
+../Core/Src/protocol.c:595:6:build_response_frame	12
+../Core/Src/protocol.c:718:6:process_received_frame	20
+../Core/Src/protocol.c:776:6:process_protocol_data	19
+../Core/Src/protocol.c:964:6:process_command	68

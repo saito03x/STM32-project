@@ -381,10 +381,6 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 
 	//Obliczenie crc z odebranych danych i porownanie
 	uint16_t calculated_crc = calculate_frame_crc(frame);
-	// DEBUG: Print CRC values for troubleshooting
-	char debug_msg[64];
-	sprintf(debug_msg, "CRC: calc=0x%04X, recv=0x%04X", calculated_crc, frame->crc);
-	UART_TX_FSend("DEBUG: %s\n", debug_msg);
 
 	if (calculated_crc != frame->crc) {
 		if (response_buffer && response_size >= MAX_PAYLOAD_LEN
@@ -720,12 +716,6 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
  * @param len Długość bufora
  */
 void process_received_frame(const char *buffer, uint16_t len) {
-	// DEBUG: Print received frame
-	char debug_msg[128];
-	strncpy(debug_msg, buffer, sizeof(debug_msg) - 1);
-	debug_msg[sizeof(debug_msg) - 1] = '\0';
-	UART_TX_FSend("DEBUG: Received frame: %s\n", debug_msg);
-
 	Frame frame;
 	char response[MAX_FRAME_LEN];
 	ParseResult result = parse_frame(buffer, len, &frame, response,
@@ -1032,8 +1022,8 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 
                     if (!error) {
                         // Validate time offset range: 00001 - Tmax = 600 * Tint
-                        extern volatile uint32_t current_collection_interval;
-                        uint32_t max_offset = COLOR_BUFFER_SIZE * current_collection_interval;
+                        extern volatile uint32_t timer_interval;
+                        uint32_t max_offset = COLOR_BUFFER_SIZE * timer_interval;
                         if (time_offset == 0 || time_offset > max_offset) {
                             sprintf(data_buffer, "ANSOUTOFRANGE");
                             if (build_response_frame(response_buffer, response_size, DEVICE_ID,
@@ -1108,8 +1098,9 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
                     }
 
                     if (!error && new_interval > 0) {
-                        extern volatile uint32_t current_collection_interval;
-                        current_collection_interval = new_interval;
+                        extern volatile uint32_t timer_interval;
+
+                        timer_interval = new_interval;
 
                         if (build_response_frame(response_buffer, response_size, DEVICE_ID,
                                 frame->sender, frame->frame_id, RESP_OK, 0)) {
@@ -1132,8 +1123,8 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
         case GETINT_CMD:
             // Get current collection interval
             {
-                extern volatile uint32_t current_collection_interval;
-                sprintf(data_buffer, "%05lu", current_collection_interval);
+                extern volatile uint32_t timer_interval;
+                sprintf(data_buffer, "%05lu", timer_interval);
                 if (build_response_frame(response_buffer, response_size, DEVICE_ID,
                         frame->sender, frame->frame_id, data_buffer, 0)) {
                     UART_TX_FSend("%s", response_buffer);

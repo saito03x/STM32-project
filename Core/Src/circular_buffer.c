@@ -139,7 +139,7 @@ ColorBufferEntry_t* ColorBuffer_GetByTimeOffset(uint32_t timeOffsetMs) {
     }
 
     // Validate time offset range: 00001 - Tmax = 600 * Tint
-    uint32_t maxOffset = COLOR_BUFFER_SIZE * current_collection_interval;
+    uint32_t maxOffset = COLOR_BUFFER_SIZE * timer_interval;
     if (timeOffsetMs == 0 || timeOffsetMs > maxOffset) {
         return NULL; // Invalid range
     }
