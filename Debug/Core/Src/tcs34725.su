@@ -1,0 +1,4 @@
+../Core/Src/tcs34725.c:8:13:TCS34725_WriteReg	32	static
+../Core/Src/tcs34725.c:16:16:TCS34725_ReadReg8	32	static
+../Core/Src/tcs34725.c:30:9:TCS34725_Init	24	static
+../Core/Src/tcs34725.c:62:6:TCS34725_ReadRawData	40	static

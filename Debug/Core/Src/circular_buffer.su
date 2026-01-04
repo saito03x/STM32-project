@@ -1,0 +1,10 @@
+../Core/Src/circular_buffer.c:16:9:UART_RX_IsEmpty	4	static
+../Core/Src/circular_buffer.c:20:9:UART_RX_GetChar	16	static
+../Core/Src/circular_buffer.c:31:6:UART_TX_FSend	152	static,ignoring_inline_asm
+../Core/Src/circular_buffer.c:70:9:ColorBuffer_IsEmpty	4	static
+../Core/Src/circular_buffer.c:78:9:ColorBuffer_IsFull	4	static
+../Core/Src/circular_buffer.c:86:10:ColorBuffer_GetCount	4	static
+../Core/Src/circular_buffer.c:96:9:ColorBuffer_Put	16	static,ignoring_inline_asm
+../Core/Src/circular_buffer.c:115:21:ColorBuffer_GetLatest	16	static
+../Core/Src/circular_buffer.c:136:21:ColorBuffer_GetByTimeOffset	40	static
+../Core/Src/circular_buffer.c:188:6:ColorBuffer_Clear	4	static,ignoring_inline_asm

@@ -1,0 +1,14 @@
+../Core/Src/protocol.c:20:12:format_ans_data	40	static
+../Core/Src/protocol.c:36:12:format_hex_data	112	static
+../Core/Src/protocol.c:52:5:convert_char_to_int	32	static
+../Core/Src/protocol.c:70:10:convert_hex_to_int	24	static
+../Core/Src/protocol.c:92:5:hex_decode_string	48	static
+../Core/Src/protocol.c:127:5:hex_encode_string	40	static
+../Core/Src/protocol.c:152:9:parse_command	16	static
+../Core/Src/protocol.c:205:9:get_command_param_len	16	static
+../Core/Src/protocol.c:240:13:parse_frame	520	static
+../Core/Src/protocol.c:544:10:calculate_frame_crc	832	static
+../Core/Src/protocol.c:599:6:build_response_frame	1120	static
+../Core/Src/protocol.c:722:6:process_received_frame	1000	static
+../Core/Src/protocol.c:786:6:process_protocol_data	296	static
+../Core/Src/protocol.c:974:6:process_command	352	static
