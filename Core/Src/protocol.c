@@ -2,6 +2,7 @@
 #include "crc16.h"
 #include "circular_buffer.h"
 #include "gpio.h"
+#include "tim.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -970,6 +971,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
             // Start data collection
             if (build_response_frame(response_buffer, response_size, DEVICE_ID,
                     frame->sender, frame->frame_id, RESP_OK, 0)) {
+            	HAL_TIM_Base_Start_IT(&htim3);
                 UART_TX_FSend("%s", response_buffer);
             }
             break;
@@ -978,6 +980,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
             // Stop data collection
             if (build_response_frame(response_buffer, response_size, DEVICE_ID,
                     frame->sender, frame->frame_id, RESP_OK, 0)) {
+            	HAL_TIM_Base_Stop_IT(&htim3);
                 UART_TX_FSend("%s", response_buffer);
             }
             break;

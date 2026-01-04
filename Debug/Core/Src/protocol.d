@@ -30,7 +30,7 @@ Core/Src/protocol.o: ../Core/Src/protocol.c ../Core/Inc/protocol.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- ../Core/Inc/main.h ../Core/Inc/gpio.h
+ ../Core/Inc/main.h ../Core/Inc/gpio.h ../Core/Inc/tim.h
 ../Core/Inc/protocol.h:
 ../Core/Inc/crc16.h:
 ../Core/Inc/circular_buffer.h:
@@ -67,3 +67,4 @@ Core/Src/protocol.o: ../Core/Src/protocol.c ../Core/Inc/protocol.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
 ../Core/Inc/main.h:
 ../Core/Inc/gpio.h:
+../Core/Inc/tim.h:
