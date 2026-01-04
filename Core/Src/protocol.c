@@ -18,13 +18,13 @@ volatile uint8_t led_state = 0;               // Default: LED OFF
  * @param data Pointer to color data
  * @return Number of characters written
  */
-static int format_ans_data(char *buffer, size_t buffer_size, TCS34725_Data_t *data) {
+static int format_ans_data(char *buffer, size_t buffer_size,
+		TCS34725_Data_t *data) {
 	return snprintf(buffer, buffer_size, "ANS"
-	                    "R%05X"
-	                    "G%05X"
-	                    "B%05X"
-	                    "C%05X",
-	                    data->r, data->g, data->b, data->c);
+			"R%05X"
+			"G%05X"
+			"B%05X"
+			"C%05X", data->r, data->g, data->b, data->c);
 }
 
 /**
@@ -34,15 +34,16 @@ static int format_ans_data(char *buffer, size_t buffer_size, TCS34725_Data_t *da
  * @param data Pointer to color data
  * @return Number of characters written
  */
-static int format_hex_data(char *buffer, size_t buffer_size, TCS34725_Data_t *data) {
-    // Normalize 16-bit values (0-65535) to 8-bit (0-255)
-    uint8_t r_norm = (uint8_t)((data->r * 255ULL) / 65535);
-    uint8_t g_norm = (uint8_t)((data->g * 255ULL) / 65535);
-    uint8_t b_norm = (uint8_t)((data->b * 255ULL) / 65535);
-    uint8_t c_norm = (uint8_t)((data->c * 255ULL) / 65535);
+static int format_hex_data(char *buffer, size_t buffer_size,
+		TCS34725_Data_t *data) {
+	// Normalize 16-bit values (0-65535) to 8-bit (0-255)
+	uint8_t r_norm = (uint8_t) ((data->r * 255ULL) / 65535);
+	uint8_t g_norm = (uint8_t) ((data->g * 255ULL) / 65535);
+	uint8_t b_norm = (uint8_t) ((data->b * 255ULL) / 65535);
+	uint8_t c_norm = (uint8_t) ((data->c * 255ULL) / 65535);
 
-    return snprintf(buffer, buffer_size, "HEX%02X%02X%02X%02X",
-                    r_norm, g_norm, b_norm, c_norm);
+	return snprintf(buffer, buffer_size, "HEX%02X%02X%02X%02X", r_norm, g_norm,
+			b_norm, c_norm);
 }
 
 /**
@@ -91,31 +92,31 @@ uint16_t convert_hex_to_int(const char *hex_str, size_t len) {
  * @return Number of decoded bytes, or -1 on error
  */
 int hex_decode_string(const char *hex_str, char *output, size_t output_size) {
-    if (!hex_str || !output || output_size == 0) {
-        return -1;
-    }
+	if (!hex_str || !output || output_size == 0) {
+		return -1;
+	}
 
-    size_t hex_len = strlen(hex_str);
-    if (hex_len % 2 != 0) {
-        return -1; // Hex string must have even length
-    }
+	size_t hex_len = strlen(hex_str);
+	if (hex_len % 2 != 0) {
+		return -1; // Hex string must have even length
+	}
 
-    size_t byte_count = hex_len / 2;
-    if (byte_count >= output_size) {
-        return -1; // Output buffer too small
-    }
+	size_t byte_count = hex_len / 2;
+	if (byte_count >= output_size) {
+		return -1; // Output buffer too small
+	}
 
-    for (size_t i = 0; i < byte_count; i++) {
-        char hex_pair[3] = {hex_str[i * 2], hex_str[i * 2 + 1], '\0'};
-        uint16_t byte_val = convert_hex_to_int(hex_pair, 2);
-        if (byte_val == 0 && strcmp(hex_pair, "00") != 0) {
-            return -1; // Invalid hex character
-        }
-        output[i] = (char)byte_val;
-    }
+	for (size_t i = 0; i < byte_count; i++) {
+		char hex_pair[3] = { hex_str[i * 2], hex_str[i * 2 + 1], '\0' };
+		uint16_t byte_val = convert_hex_to_int(hex_pair, 2);
+		if (byte_val == 0 && strcmp(hex_pair, "00") != 0) {
+			return -1; // Invalid hex character
+		}
+		output[i] = (char) byte_val;
+	}
 
-    output[byte_count] = '\0';
-    return (int)byte_count;
+	output[byte_count] = '\0';
+	return (int) byte_count;
 }
 
 /**
@@ -126,23 +127,23 @@ int hex_decode_string(const char *hex_str, char *output, size_t output_size) {
  * @return Number of hex characters written, or -1 on error
  */
 int hex_encode_string(const char *input, char *output, size_t output_size) {
-    if (!input || !output || output_size == 0) {
-        return -1;
-    }
+	if (!input || !output || output_size == 0) {
+		return -1;
+	}
 
-    size_t input_len = strlen(input);
-    size_t required_size = input_len * 2 + 1; // 2 hex chars per byte + null terminator
+	size_t input_len = strlen(input);
+	size_t required_size = input_len * 2 + 1; // 2 hex chars per byte + null terminator
 
-    if (required_size > output_size) {
-        return -1; // Output buffer too small
-    }
+	if (required_size > output_size) {
+		return -1; // Output buffer too small
+	}
 
-    for (size_t i = 0; i < input_len; i++) {
-        sprintf(&output[i * 2], "%02X", (uint8_t)input[i]);
-    }
+	for (size_t i = 0; i < input_len; i++) {
+		sprintf(&output[i * 2], "%02X", (uint8_t) input[i]);
+	}
 
-    output[input_len * 2] = '\0';
-    return (int)(input_len * 2);
+	output[input_len * 2] = '\0';
+	return (int) (input_len * 2);
 }
 
 /**
@@ -343,7 +344,8 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 		}
 
 		// Decode hex string to ASCII
-		int decoded_len = hex_decode_string(hex_data, frame->data, sizeof(frame->data));
+		int decoded_len = hex_decode_string(hex_data, frame->data,
+				sizeof(frame->data));
 		if (decoded_len < 0) {
 			return PARSE_INVALID_FORMAT;
 		}
@@ -481,8 +483,7 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 				}
 				if (valid_sender) {
 					build_response_frame(response_buffer, response_size,
-							DEVICE_ID, frame->sender, frame->frame_id, NULL,
-							WRCMD);
+					DEVICE_ID, frame->sender, frame->frame_id, NULL, WRCMD);
 				}
 			}
 			return PARSE_CMD_ERROR;
@@ -503,8 +504,7 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 				}
 				if (valid_sender) {
 					build_response_frame(response_buffer, response_size,
-							DEVICE_ID, frame->sender, frame->frame_id, NULL,
-							WRLEN);
+					DEVICE_ID, frame->sender, frame->frame_id, NULL, WRLEN);
 				}
 			}
 			return PARSE_LENGTH_MISMATCH;
@@ -571,7 +571,8 @@ uint16_t calculate_frame_crc(const Frame *frame) {
 	// Data (hex-encoded)
 	if (frame->data_len > 0) {
 		char hex_data[MAX_PAYLOAD_LEN * 2 + 1];
-		int hex_len = hex_encode_string(frame->data, hex_data, sizeof(hex_data));
+		int hex_len = hex_encode_string(frame->data, hex_data,
+				sizeof(hex_data));
 		if (hex_len > 0) {
 			memcpy(&crc_buffer[pos], hex_data, hex_len);
 			pos += hex_len;
@@ -644,8 +645,9 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
 	size_t data_len = hex_len;
 
 	// Sprawdza czy dane zmieszczą się w buforze
-	size_t total_len = FIELD_START_LEN + FIELD_ADDR_LEN + FIELD_ADDR_LEN + FIELD_DATA_LEN +
-	FIELD_ID_LEN + data_len + FIELD_CRC_LEN + FIELD_END_LEN;
+	size_t total_len = FIELD_START_LEN + FIELD_ADDR_LEN + FIELD_ADDR_LEN
+			+ FIELD_DATA_LEN +
+			FIELD_ID_LEN + data_len + FIELD_CRC_LEN + FIELD_END_LEN;
 	if (total_len > buffer_size) {
 		return false;
 	}
@@ -777,7 +779,7 @@ void process_received_frame(const char *buffer, uint16_t len) {
 void process_protocol_data(void) {
 	static char frame_buffer[MAX_FRAME_LEN];
 	static size_t buffer_pos = 0;
-	static ParserState state = STATE_IDLE;  
+	static ParserState state = STATE_IDLE;
 	static uint16_t expected_data_len = 0;  // Długość danych z pola Len
 	static size_t header_pos = 0;          // Pozycja w nagłówku
 	static size_t data_pos = 0;            // Pozycja w danych
@@ -837,7 +839,7 @@ void process_protocol_data(void) {
 				memcpy(sender, &frame_buffer[1], FIELD_ADDR_LEN);
 				sender[FIELD_ADDR_LEN] = '\0';
 				memcpy(receiver, &frame_buffer[1 + FIELD_ADDR_LEN],
-						FIELD_ADDR_LEN);
+				FIELD_ADDR_LEN);
 				receiver[FIELD_ADDR_LEN] = '\0';
 				memcpy(id_str,
 						&frame_buffer[1 + FIELD_ADDR_LEN + FIELD_ADDR_LEN
@@ -963,312 +965,360 @@ void process_protocol_data(void) {
  * @param response_size Size of response buffer
  */
 void process_command(Frame *frame, char *response_buffer, size_t response_size) {
-    char data_buffer[MAX_PAYLOAD_LEN];
-    ErrorCode error = 0;
+	char data_buffer[MAX_PAYLOAD_LEN];
+	ErrorCode error = 0;
 
-    switch (frame->command) {
-        case START_CMD:
-            // Start data collection
-            if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                    frame->sender, frame->frame_id, RESP_OK, 0)) {
-            	HAL_TIM_Base_Start_IT(&htim3);
-                UART_TX_FSend("%s", response_buffer);
-            }
-            break;
+	switch (frame->command) {
+	case START_CMD:
+		// Start data collection
+		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+				frame->sender, frame->frame_id, RESP_OK, 0)) {
+			HAL_TIM_Base_Start_IT(&htim3);
+			UART_TX_FSend("%s", response_buffer);
+		}
+		break;
 
-        case STOP_CMD:
-            // Stop data collection
-            if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                    frame->sender, frame->frame_id, RESP_OK, 0)) {
-            	HAL_TIM_Base_Stop_IT(&htim3);
-                UART_TX_FSend("%s", response_buffer);
-            }
-            break;
+	case STOP_CMD:
+		// Stop data collection
+		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+				frame->sender, frame->frame_id, RESP_OK, 0)) {
+			HAL_TIM_Base_Stop_IT(&htim3);
+			UART_TX_FSend("%s", response_buffer);
+		}
+		break;
 
-        case RDRAW_CMD:
-            // Read raw sensor data in ANS format
-            {
-                ColorBufferEntry_t *latest = ColorBuffer_GetLatest();
-                if (latest != NULL) {
-                    format_ans_data(data_buffer, sizeof(data_buffer), &latest->data);
-                    if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                            frame->sender, frame->frame_id, data_buffer, 0)) {
-                        UART_TX_FSend("%s", response_buffer);
-                    }
-                } else {
-                    // No data available
-                    sprintf(data_buffer, "ANSNODATA");
-                    if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                            frame->sender, frame->frame_id, data_buffer, 0)) {
-                        UART_TX_FSend("%s", response_buffer);
-                    }
-                }
-            }
-            break;
+	case RDRAW_CMD:
+		// Read raw sensor data in ANS format
+	{
+		ColorBufferEntry_t *latest = ColorBuffer_GetLatest();
+		if (latest != NULL) {
+			format_ans_data(data_buffer, sizeof(data_buffer), &latest->data);
+			if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+					frame->sender, frame->frame_id, data_buffer, 0)) {
+				UART_TX_FSend("%s", response_buffer);
+			}
+		} else {
+			// No data available
+			sprintf(data_buffer, "ANSNODATA");
+			if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+					frame->sender, frame->frame_id, data_buffer, 0)) {
+				UART_TX_FSend("%s", response_buffer);
+			}
+		}
+	}
+		break;
 
-        case RDARC_CMD:
-            // Read archived data by time offset (5 digits)
-            {
-                if (frame->params_len != PARAM_LEN_RDARC) {
-                    error = WRLEN;
-                } else {
-                    // Parse time offset parameter (5 ASCII digits)
-                    uint32_t time_offset = 0;
-                    for (int i = 0; i < 5; i++) {
-                        char digit = frame->params[i];
-                        if (digit < '0' || digit > '9') {
-                            error = WRCMD;
-                            break;
-                        }
-                        time_offset = time_offset * 10 + (digit - '0');
-                    }
+	case RDARC_CMD:
+		// Read archived data by time offset (5 digits)
+	{
+		if (frame->params_len != PARAM_LEN_RDARC) {
+			error = WRLEN;
+		} else {
+			// Parse time offset parameter (5 ASCII digits)
+			uint32_t time_offset = 0;
+			for (int i = 0; i < 5; i++) {
+				char digit = frame->params[i];
+				if (digit < '0' || digit > '9') {
+					error = WRCMD;
+					break;
+				}
+				time_offset = time_offset * 10 + (digit - '0');
+			}
 
-                    if (!error) {
-                        // Validate time offset range: 00001 - Tmax = 600 * Tint
-                        extern volatile uint32_t timer_interval;
-                        uint32_t max_offset = COLOR_BUFFER_SIZE * timer_interval;
-                        if (time_offset == 0 || time_offset > max_offset) {
-                            sprintf(data_buffer, "ANSOUTOFRANGE");
-                            if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                                    frame->sender, frame->frame_id, data_buffer, 0)) {
-                                UART_TX_FSend("%s", response_buffer);
-                            }
-                        } else {
-                            ColorBufferEntry_t *entry = ColorBuffer_GetByTimeOffset(time_offset);
-                            if (entry != NULL) {
-                                format_ans_data(data_buffer, sizeof(data_buffer), &entry->data);
-                                if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                                        frame->sender, frame->frame_id, data_buffer, 0)) {
-                                    UART_TX_FSend("%s", response_buffer);
-                                }
-                            } else {
-                                // No data found for given time offset
-                                sprintf(data_buffer, "ANSNODATA");
-                                if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                                        frame->sender, frame->frame_id, data_buffer, 0)) {
-                                    UART_TX_FSend("%s", response_buffer);
-                                }
-                            }
-                        }
-                    }
-                }
+			if (!error) {
+				// Validate time offset range: 00001 - Tmax = 600 * Tint
+				extern volatile uint32_t timer_interval;
+				uint32_t max_offset = COLOR_BUFFER_SIZE * timer_interval;
+				if (time_offset == 0 || time_offset > max_offset) {
+					sprintf(data_buffer, "ANSOUTOFRANGE");
+					if (build_response_frame(response_buffer, response_size,
+					DEVICE_ID, frame->sender, frame->frame_id, data_buffer,
+							0)) {
+						UART_TX_FSend("%s", response_buffer);
+					}
+				} else {
+					ColorBufferEntry_t *entry = ColorBuffer_GetByTimeOffset(
+							time_offset);
+					if (entry != NULL) {
+						format_ans_data(data_buffer, sizeof(data_buffer),
+								&entry->data);
+						if (build_response_frame(response_buffer, response_size,
+						DEVICE_ID, frame->sender, frame->frame_id, data_buffer,
+								0)) {
+							UART_TX_FSend("%s", response_buffer);
+						}
+					} else {
+						// No data found for given time offset
+						sprintf(data_buffer, "ANSNODATA");
+						if (build_response_frame(response_buffer, response_size,
+						DEVICE_ID, frame->sender, frame->frame_id, data_buffer,
+								0)) {
+							UART_TX_FSend("%s", response_buffer);
+						}
+					}
+				}
+			}
+		}
 
-                if (error) {
-                    if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                            frame->sender, frame->frame_id, NULL, error)) {
-                        UART_TX_FSend("%s", response_buffer);
-                    }
-                }
-            }
-            break;
+		if (error) {
+			if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+					frame->sender, frame->frame_id, NULL, error)) {
+				UART_TX_FSend("%s", response_buffer);
+			}
+		}
+	}
+		break;
 
-        case RDHEX_CMD:
-            // Read normalized 8-bit color data in HEX format
-            {
-                ColorBufferEntry_t *latest = ColorBuffer_GetLatest();
-                if (latest != NULL) {
-                    format_hex_data(data_buffer, sizeof(data_buffer), &latest->data);
-                    if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                            frame->sender, frame->frame_id, data_buffer, 0)) {
-                        UART_TX_FSend("%s", response_buffer);
-                    }
-                } else {
-                    // No data available
-                    sprintf(data_buffer, "HEX00000000");
-                    if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                            frame->sender, frame->frame_id, data_buffer, 0)) {
-                        UART_TX_FSend("%s", response_buffer);
-                    }
-                }
-            }
-            break;
+	case RDHEX_CMD:
+		// Read normalized 8-bit color data in HEX format with TIME OFFSET
+	{
+		if (frame->params_len != PARAM_LEN_RDHEX) {
+			error = WRLEN;
+		} else {
+			// 1. Parsowanie parametru czasu (5 cyfr ASCII)
+			uint32_t time_offset = 0;
+			for (int i = 0; i < 5; i++) {
+				char digit = frame->params[i];
+				if (digit < '0' || digit > '9') {
+					error = WRCMD;
+					break;
+				}
+				time_offset = time_offset * 10 + (digit - '0');
+			}
 
-        case SETINT_CMD:
-            // Set collection interval (5 digits)
-            {
-                if (frame->params_len != PARAM_LEN_SETINT) {
-                    error = WRLEN;
-                } else {
-                    // Parse interval parameter (5 ASCII digits)
-                    uint32_t new_interval = 0;
-                    for (int i = 0; i < 5; i++) {
-                        char digit = frame->params[i];
-                        if (digit < '0' || digit > '9') {
-                            error = WRCMD;
-                            break;
-                        }
-                        new_interval = new_interval * 10 + (digit - '0');
-                    }
+			if (!error) {
+				ColorBufferEntry_t *entry = NULL;
+				extern volatile uint32_t timer_interval; // Używamy poprawnej zmiennej
+				uint32_t max_offset = COLOR_BUFFER_SIZE * timer_interval;
 
-                    if (!error && new_interval > 0) {
-                        extern volatile uint32_t timer_interval;
+				if (time_offset == 0) {
+					entry = ColorBuffer_GetLatest();
+				} else if (time_offset > max_offset) {
+					sprintf(data_buffer, "HEX00000000");
+					if (build_response_frame(response_buffer, response_size,
+					DEVICE_ID, frame->sender, frame->frame_id, data_buffer,
+							0)) {
+						UART_TX_FSend("%s", response_buffer);
+					}
+				} else {
+					if (entry != NULL) {
+						// Znaleziono dane - wyślij HEX
+						format_hex_data(data_buffer, sizeof(data_buffer),
+								&entry->data);
+						if (build_response_frame(response_buffer, response_size,
+								DEVICE_ID, frame->sender, frame->frame_id,
+								data_buffer, 0)) {
+							UART_TX_FSend("%s", response_buffer);
+						}
+					} else {
+						// Brak danych (pusty bufor lub offset poza zakresem)
+						sprintf(data_buffer, "HEX00000000");
+						if (build_response_frame(response_buffer, response_size,
+								DEVICE_ID, frame->sender, frame->frame_id,
+								data_buffer, 0)) {
+							UART_TX_FSend("%s", response_buffer);
+						}
+					}
+				}
+			}
+		}
 
-                        timer_interval = new_interval;
+		// Obsługa błędów parsowania (WRLEN, WRCMD)
+		if (error) {
+			if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+					frame->sender, frame->frame_id, NULL, error)) {
+				UART_TX_FSend("%s", response_buffer);
+			}
+		}
+	}
+		break;
 
-                        if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                                frame->sender, frame->frame_id, RESP_OK, 0)) {
-                            UART_TX_FSend("%s", response_buffer);
-                        }
-                    } else {
-                        error = WRCMD;
-                    }
-                }
+	case SETINT_CMD:
+		// Set collection interval (5 digits)
+	{
+		if (frame->params_len != PARAM_LEN_SETINT) {
+			error = WRLEN;
+		} else {
+			// Parse interval parameter (5 ASCII digits)
+			uint32_t new_interval = 0;
+			for (int i = 0; i < 5; i++) {
+				char digit = frame->params[i];
+				if (digit < '0' || digit > '9') {
+					error = WRCMD;
+					break;
+				}
+				new_interval = new_interval * 10 + (digit - '0');
+			}
 
-                if (error) {
-                    if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                            frame->sender, frame->frame_id, NULL, error)) {
-                        UART_TX_FSend("%s", response_buffer);
-                    }
-                }
-            }
-            break;
+			if (!error && new_interval > 0) {
+				extern volatile uint32_t timer_interval;
 
-        case GETINT_CMD:
-            // Get current collection interval
-            {
-                extern volatile uint32_t timer_interval;
-                sprintf(data_buffer, "%05lu", timer_interval);
-                if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                        frame->sender, frame->frame_id, data_buffer, 0)) {
-                    UART_TX_FSend("%s", response_buffer);
-                }
-            }
-            break;
+				timer_interval = new_interval;
 
-        case SETGAIN_CMD:
-            // Set gain index (1 digit: 0-3)
-            {
-                if (frame->params_len != PARAM_LEN_SETGAIN) {
-                    error = WRLEN;
-                } else {
-                    char gain_char = frame->params[0];
-                    if (gain_char >= '0' && gain_char <= '3') {
-                        current_gain_index = gain_char - '0';
-                        // TODO: Apply gain setting to TCS34725 sensor
-                        if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                                frame->sender, frame->frame_id, RESP_OK, 0)) {
-                            UART_TX_FSend("%s", response_buffer);
-                        }
-                    } else {
-                        error = WRCMD;
-                    }
-                }
+				if (build_response_frame(response_buffer, response_size,
+				DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
+					UART_TX_FSend("%s", response_buffer);
+				}
+			} else {
+				error = WRCMD;
+			}
+		}
 
-                if (error) {
-                    if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                            frame->sender, frame->frame_id, NULL, error)) {
-                        UART_TX_FSend("%s", response_buffer);
-                    }
-                }
-            }
-            break;
+		if (error) {
+			if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+					frame->sender, frame->frame_id, NULL, error)) {
+				UART_TX_FSend("%s", response_buffer);
+			}
+		}
+	}
+		break;
 
-        case GETGAIN_CMD:
-            // Get current gain index
-            {
-                sprintf(data_buffer, "%01u", current_gain_index);
-                if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                        frame->sender, frame->frame_id, data_buffer, 0)) {
-                    UART_TX_FSend("%s", response_buffer);
-                }
-            }
-            break;
+	case GETINT_CMD:
+		// Get current collection interval
+	{
+		extern volatile uint32_t timer_interval;
+		sprintf(data_buffer, "%05lu", timer_interval);
+		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+				frame->sender, frame->frame_id, data_buffer, 0)) {
+			UART_TX_FSend("%s", response_buffer);
+		}
+	}
+		break;
 
-        case SETTIME_CMD:
-            // Set integration time index (1 digit: 0-5)
-            {
-                if (frame->params_len != PARAM_LEN_SETTIME) {
-                    error = WRLEN;
-                } else {
-                    char time_char = frame->params[0];
-                    if (time_char >= '0' && time_char <= '5') {
-                        current_time_index = time_char - '0';
-                        // TODO: Apply integration time setting to TCS34725 sensor
-                        if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                                frame->sender, frame->frame_id, RESP_OK, 0)) {
-                            UART_TX_FSend("%s", response_buffer);
-                        }
-                    } else {
-                        error = WRCMD;
-                    }
-                }
+	case SETGAIN_CMD:
+		// Set gain index (1 digit: 0-3)
+	{
+		if (frame->params_len != PARAM_LEN_SETGAIN) {
+			error = WRLEN;
+		} else {
+			char gain_char = frame->params[0];
+			if (gain_char >= '0' && gain_char <= '3') {
+				current_gain_index = gain_char - '0';
+				// TODO: Apply gain setting to TCS34725 sensor
+				if (build_response_frame(response_buffer, response_size,
+				DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
+					UART_TX_FSend("%s", response_buffer);
+				}
+			} else {
+				error = WRCMD;
+			}
+		}
 
-                if (error) {
-                    if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                            frame->sender, frame->frame_id, NULL, error)) {
-                        UART_TX_FSend("%s", response_buffer);
-                    }
-                }
-            }
-            break;
+		if (error) {
+			if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+					frame->sender, frame->frame_id, NULL, error)) {
+				UART_TX_FSend("%s", response_buffer);
+			}
+		}
+	}
+		break;
 
-        case GETTIME_CMD:
-            // Get current integration time index
-            {
-                sprintf(data_buffer, "%01u", current_time_index);
-                if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                        frame->sender, frame->frame_id, data_buffer, 0)) {
-                    UART_TX_FSend("%s", response_buffer);
-                }
-            }
-            break;
+	case GETGAIN_CMD:
+		// Get current gain index
+	{
+		sprintf(data_buffer, "%01u", current_gain_index);
+		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+				frame->sender, frame->frame_id, data_buffer, 0)) {
+			UART_TX_FSend("%s", response_buffer);
+		}
+	}
+		break;
 
-        case SETLED_CMD:
-            // Set LED state (1 digit: '0' = OFF, '1' = ON)
-            {
-                if (frame->params_len != PARAM_LEN_SETLED) {
-                    error = WRLEN;
-                } else {
-                    char led_char = frame->params[0];
-                    if (led_char == '0' || led_char == '1') {
-                        led_state = led_char - '0';
+	case SETTIME_CMD:
+		// Set integration time index (1 digit: 0-5)
+	{
+		if (frame->params_len != PARAM_LEN_SETTIME) {
+			error = WRLEN;
+		} else {
+			char time_char = frame->params[0];
+			if (time_char >= '0' && time_char <= '5') {
+				current_time_index = time_char - '0';
+				// TODO: Apply integration time setting to TCS34725 sensor
+				if (build_response_frame(response_buffer, response_size,
+				DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
+					UART_TX_FSend("%s", response_buffer);
+				}
+			} else {
+				error = WRCMD;
+			}
+		}
 
-                        // Apply LED state to hardware (PC3 GPIO pin)
-                        if (led_state == 1) {
-                            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_SET);
-                        } else {
-                            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_RESET);
-                        }
+		if (error) {
+			if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+					frame->sender, frame->frame_id, NULL, error)) {
+				UART_TX_FSend("%s", response_buffer);
+			}
+		}
+	}
+		break;
 
-                        if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                                frame->sender, frame->frame_id, RESP_OK, 0)) {
-                            UART_TX_FSend("%s", response_buffer);
-                        }
-                    } else {
-                        error = WRCMD;
-                    }
-                }
+	case GETTIME_CMD:
+		// Get current integration time index
+	{
+		sprintf(data_buffer, "%01u", current_time_index);
+		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+				frame->sender, frame->frame_id, data_buffer, 0)) {
+			UART_TX_FSend("%s", response_buffer);
+		}
+	}
+		break;
 
-                if (error) {
-                    if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                            frame->sender, frame->frame_id, NULL, error)) {
-                        UART_TX_FSend("%s", response_buffer);
-                    }
-                }
-            }
-            break;
+	case SETLED_CMD:
+		// Set LED state (1 digit: '0' = OFF, '1' = ON)
+	{
+		if (frame->params_len != PARAM_LEN_SETLED) {
+			error = WRLEN;
+		} else {
+			char led_char = frame->params[0];
+			if (led_char == '0' || led_char == '1') {
+				led_state = led_char - '0';
 
-        case GETLED_CMD:
-            // Get current LED state
-            {
-                // Read actual LED state from hardware (PC3)
-                GPIO_PinState actual_state = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_3);
-                uint8_t actual_led_state = (actual_state == GPIO_PIN_SET) ? 1 : 0;
+				// Apply LED state to hardware (PC3 GPIO pin)
+				if (led_state == 1) {
+					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_SET);
+				} else {
+					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_RESET);
+				}
 
-                sprintf(data_buffer, "%01u", actual_led_state);
-                if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                        frame->sender, frame->frame_id, data_buffer, 0)) {
-                    UART_TX_FSend("%s", response_buffer);
-                }
-            }
-            break;
+				if (build_response_frame(response_buffer, response_size,
+				DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
+					UART_TX_FSend("%s", response_buffer);
+				}
+			} else {
+				error = WRCMD;
+			}
+		}
 
-        default:
-            // Unknown command
-            if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-                    frame->sender, frame->frame_id, NULL, WRCMD)) {
-                UART_TX_FSend("%s", response_buffer);
-            }
-            break;
-    }
+		if (error) {
+			if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+					frame->sender, frame->frame_id, NULL, error)) {
+				UART_TX_FSend("%s", response_buffer);
+			}
+		}
+	}
+		break;
+
+	case GETLED_CMD:
+		// Get current LED state
+	{
+		// Read actual LED state from hardware (PC3)
+		GPIO_PinState actual_state = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_3);
+		uint8_t actual_led_state = (actual_state == GPIO_PIN_SET) ? 1 : 0;
+
+		sprintf(data_buffer, "%01u", actual_led_state);
+		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+				frame->sender, frame->frame_id, data_buffer, 0)) {
+			UART_TX_FSend("%s", response_buffer);
+		}
+	}
+		break;
+
+	default:
+		// Unknown command
+		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
+				frame->sender, frame->frame_id, NULL, WRCMD)) {
+			UART_TX_FSend("%s", response_buffer);
+		}
+		break;
+	}
 }

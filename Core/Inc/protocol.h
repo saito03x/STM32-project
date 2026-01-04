@@ -48,7 +48,7 @@
 #define PARAM_LEN_SETTIME   1
 #define PARAM_LEN_SETLED    1
 #define PARAM_LEN_RDARC     5
-#define PARAM_LEN_RDHEX     3
+#define PARAM_LEN_RDHEX     5
 
 //KOMENDY ENUM
 typedef enum {
