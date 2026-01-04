@@ -19,12 +19,12 @@ volatile uint8_t led_state = 0;               // Default: LED OFF
  * @return Number of characters written
  */
 static int format_ans_data(char *buffer, size_t buffer_size, TCS34725_Data_t *data) {
-    return snprintf(buffer, buffer_size, "ANS"
-                    "R%010X"
-                    "G%010X"
-                    "B%010X"
-                    "C%010X",
-                    data->r, data->g, data->b, data->c);
+	return snprintf(buffer, buffer_size, "ANS"
+	                    "R%05X"
+	                    "G%05X"
+	                    "B%05X"
+	                    "C%05X",
+	                    data->r, data->g, data->b, data->c);
 }
 
 /**

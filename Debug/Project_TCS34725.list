@@ -7,23 +7,23 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
   1 .text         0000a13c  080001d0  080001d0  000011d0  2**4
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .rodata       00000390  0800a30c  0800a30c  0000b30c  2**2
+  2 .rodata       0000038c  0800a30c  0800a30c  0000b30c  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  3 .ARM.extab    00000000  0800a69c  0800a69c  0000c064  2**0
+  3 .ARM.extab    00000000  0800a698  0800a698  0000c064  2**0
                   CONTENTS, READONLY
-  4 .ARM          00000008  0800a69c  0800a69c  0000b69c  2**2
+  4 .ARM          00000008  0800a698  0800a698  0000b698  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  5 .preinit_array 00000000  0800a6a4  0800a6a4  0000c064  2**0
+  5 .preinit_array 00000000  0800a6a0  0800a6a0  0000c064  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  6 .init_array   00000004  0800a6a4  0800a6a4  0000b6a4  2**2
+  6 .init_array   00000004  0800a6a0  0800a6a0  0000b6a0  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  7 .fini_array   00000004  0800a6a8  0800a6a8  0000b6a8  2**2
+  7 .fini_array   00000004  0800a6a4  0800a6a4  0000b6a4  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  8 .data         00000064  20000000  0800a6ac  0000c000  2**2
+  8 .data         00000064  20000000  0800a6a8  0000c000  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  9 .bss          000026ec  20000064  0800a710  0000c064  2**2
+  9 .bss          000026ec  20000064  0800a70c  0000c064  2**2
                   ALLOC
- 10 ._user_heap_stack 00000600  20002750  0800a710  0000c750  2**0
+ 10 ._user_heap_stack 00000600  20002750  0800a70c  0000c750  2**0
                   ALLOC
  11 .ARM.attributes 00000030  00000000  00000000  0000c064  2**0
                   CONTENTS, READONLY
@@ -1067,7 +1067,7 @@ uint16_t crc16_ccitt(const uint8_t* buffer, size_t size)
  80009c0:	f85d 7b04 	ldr.w	r7, [sp], #4
  80009c4:	4770      	bx	lr
  80009c6:	bf00      	nop
- 80009c8:	0800a448 	.word	0x0800a448
+ 80009c8:	0800a444 	.word	0x0800a444
 
 080009cc <MX_DMA_Init>:
 
@@ -2004,30 +2004,30 @@ static int format_ans_data(char *buffer, size_t buffer_size, TCS34725_Data_t *da
  8000f62:	60f8      	str	r0, [r7, #12]
  8000f64:	60b9      	str	r1, [r7, #8]
  8000f66:	607a      	str	r2, [r7, #4]
-    return snprintf(buffer, buffer_size, "ANS"
-                    "R%010X"
-                    "G%010X"
-                    "B%010X"
-                    "C%010X",
-                    data->r, data->g, data->b, data->c);
+	return snprintf(buffer, buffer_size, "ANS"
+	                    "R%05X"
+	                    "G%05X"
+	                    "B%05X"
+	                    "C%05X",
+	                    data->r, data->g, data->b, data->c);
  8000f68:	687b      	ldr	r3, [r7, #4]
  8000f6a:	885b      	ldrh	r3, [r3, #2]
-    return snprintf(buffer, buffer_size, "ANS"
+	return snprintf(buffer, buffer_size, "ANS"
  8000f6c:	4618      	mov	r0, r3
-                    data->r, data->g, data->b, data->c);
+	                    data->r, data->g, data->b, data->c);
  8000f6e:	687b      	ldr	r3, [r7, #4]
  8000f70:	889b      	ldrh	r3, [r3, #4]
-    return snprintf(buffer, buffer_size, "ANS"
+	return snprintf(buffer, buffer_size, "ANS"
  8000f72:	461a      	mov	r2, r3
-                    data->r, data->g, data->b, data->c);
+	                    data->r, data->g, data->b, data->c);
  8000f74:	687b      	ldr	r3, [r7, #4]
  8000f76:	88db      	ldrh	r3, [r3, #6]
-    return snprintf(buffer, buffer_size, "ANS"
+	return snprintf(buffer, buffer_size, "ANS"
  8000f78:	4619      	mov	r1, r3
-                    data->r, data->g, data->b, data->c);
+	                    data->r, data->g, data->b, data->c);
  8000f7a:	687b      	ldr	r3, [r7, #4]
  8000f7c:	881b      	ldrh	r3, [r3, #0]
-    return snprintf(buffer, buffer_size, "ANS"
+	return snprintf(buffer, buffer_size, "ANS"
  8000f7e:	9302      	str	r3, [sp, #8]
  8000f80:	9101      	str	r1, [sp, #4]
  8000f82:	9200      	str	r2, [sp, #0]
@@ -2197,7 +2197,7 @@ static int format_hex_data(char *buffer, size_t buffer_size, TCS34725_Data_t *da
  8001104:	3740      	adds	r7, #64	@ 0x40
  8001106:	46bd      	mov	sp, r7
  8001108:	e8bd 8fb0 	ldmia.w	sp!, {r4, r5, r7, r8, r9, sl, fp, pc}
- 800110c:	0800a334 	.word	0x0800a334
+ 800110c:	0800a330 	.word	0x0800a330
 
 08001110 <convert_char_to_int>:
 /**
@@ -2495,7 +2495,7 @@ int hex_decode_string(const char *hex_str, char *output, size_t output_size) {
  80012de:	3728      	adds	r7, #40	@ 0x28
  80012e0:	46bd      	mov	sp, r7
  80012e2:	bd80      	pop	{r7, pc}
- 80012e4:	0800a348 	.word	0x0800a348
+ 80012e4:	0800a344 	.word	0x0800a344
 
 080012e8 <hex_encode_string>:
  * @param input Input ASCII string
@@ -2587,7 +2587,7 @@ int hex_encode_string(const char *input, char *output, size_t output_size) {
  800136a:	46bd      	mov	sp, r7
  800136c:	bd80      	pop	{r7, pc}
  800136e:	bf00      	nop
- 8001370:	0800a34c 	.word	0x0800a34c
+ 8001370:	0800a348 	.word	0x0800a348
 
 08001374 <parse_command>:
 /**
@@ -2761,19 +2761,19 @@ Command parse_command(const char *command_str) {
  800147a:	46bd      	mov	sp, r7
  800147c:	bd80      	pop	{r7, pc}
  800147e:	bf00      	nop
- 8001480:	0800a354 	.word	0x0800a354
- 8001484:	0800a35c 	.word	0x0800a35c
- 8001488:	0800a364 	.word	0x0800a364
- 800148c:	0800a36c 	.word	0x0800a36c
- 8001490:	0800a374 	.word	0x0800a374
- 8001494:	0800a37c 	.word	0x0800a37c
- 8001498:	0800a384 	.word	0x0800a384
- 800149c:	0800a38c 	.word	0x0800a38c
- 80014a0:	0800a394 	.word	0x0800a394
- 80014a4:	0800a39c 	.word	0x0800a39c
- 80014a8:	0800a3a4 	.word	0x0800a3a4
- 80014ac:	0800a3ac 	.word	0x0800a3ac
- 80014b0:	0800a3b4 	.word	0x0800a3b4
+ 8001480:	0800a350 	.word	0x0800a350
+ 8001484:	0800a358 	.word	0x0800a358
+ 8001488:	0800a360 	.word	0x0800a360
+ 800148c:	0800a368 	.word	0x0800a368
+ 8001490:	0800a370 	.word	0x0800a370
+ 8001494:	0800a378 	.word	0x0800a378
+ 8001498:	0800a380 	.word	0x0800a380
+ 800149c:	0800a388 	.word	0x0800a388
+ 80014a0:	0800a390 	.word	0x0800a390
+ 80014a4:	0800a398 	.word	0x0800a398
+ 80014a8:	0800a3a0 	.word	0x0800a3a0
+ 80014ac:	0800a3a8 	.word	0x0800a3a8
+ 80014b0:	0800a3b0 	.word	0x0800a3b0
 
 080014b4 <get_command_param_len>:
 /**
@@ -3466,8 +3466,8 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
  8001a5c:	2300      	movs	r3, #0
  8001a5e:	f8c7 3190 	str.w	r3, [r7, #400]	@ 0x190
  8001a62:	e01f      	b.n	8001aa4 <parse_frame+0x580>
- 8001a64:	0800a3bc 	.word	0x0800a3bc
- 8001a68:	0800a3c0 	.word	0x0800a3c0
+ 8001a64:	0800a3b8 	.word	0x0800a3b8
+ 8001a68:	0800a3bc 	.word	0x0800a3bc
 				char c = frame->sender[i];
  8001a6c:	f507 73d4 	add.w	r3, r7, #424	@ 0x1a8
  8001a70:	f5a3 73d2 	sub.w	r3, r3, #420	@ 0x1a4
@@ -3866,7 +3866,7 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
  8001dc2:	f887 3177 	strb.w	r3, [r7, #375]	@ 0x177
 						break;
  8001dc6:	e00a      	b.n	8001dde <parse_frame+0x8ba>
- 8001dc8:	0800a3bc 	.word	0x0800a3bc
+ 8001dc8:	0800a3b8 	.word	0x0800a3b8
 				for (int i = 0; i < FIELD_ADDR_LEN; i++) {
  8001dcc:	f8d7 3170 	ldr.w	r3, [r7, #368]	@ 0x170
  8001dd0:	3301      	adds	r3, #1
@@ -4107,7 +4107,7 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
  8001fe2:	46bd      	mov	sp, r7
  8001fe4:	bd90      	pop	{r4, r7, pc}
  8001fe6:	bf00      	nop
- 8001fe8:	0800a3bc 	.word	0x0800a3bc
+ 8001fe8:	0800a3b8 	.word	0x0800a3b8
 
 08001fec <calculate_frame_crc>:
  * @return Wartość CRC16
@@ -4277,8 +4277,8 @@ uint16_t calculate_frame_crc(const Frame *frame) {
  8002152:	46bd      	mov	sp, r7
  8002154:	bd80      	pop	{r7, pc}
  8002156:	bf00      	nop
- 8002158:	0800a3c8 	.word	0x0800a3c8
- 800215c:	0800a3d0 	.word	0x0800a3d0
+ 8002158:	0800a3c4 	.word	0x0800a3c4
+ 800215c:	0800a3cc 	.word	0x0800a3cc
 
 08002160 <build_response_frame>:
  * @param error Kod błędu (ignorowany jeśli response_data != NULL)
@@ -4709,14 +4709,14 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
  8002516:	46bd      	mov	sp, r7
  8002518:	bd90      	pop	{r4, r7, pc}
  800251a:	bf00      	nop
- 800251c:	0800a3d8 	.word	0x0800a3d8
- 8002520:	0800a3e0 	.word	0x0800a3e0
- 8002524:	0800a3e8 	.word	0x0800a3e8
- 8002528:	0800a3f0 	.word	0x0800a3f0
- 800252c:	0800a3f8 	.word	0x0800a3f8
- 8002530:	0800a3c8 	.word	0x0800a3c8
- 8002534:	0800a3d0 	.word	0x0800a3d0
- 8002538:	0800a400 	.word	0x0800a400
+ 800251c:	0800a3d4 	.word	0x0800a3d4
+ 8002520:	0800a3dc 	.word	0x0800a3dc
+ 8002524:	0800a3e4 	.word	0x0800a3e4
+ 8002528:	0800a3ec 	.word	0x0800a3ec
+ 800252c:	0800a3f4 	.word	0x0800a3f4
+ 8002530:	0800a3c4 	.word	0x0800a3c4
+ 8002534:	0800a3cc 	.word	0x0800a3cc
+ 8002538:	0800a3fc 	.word	0x0800a3fc
 
 0800253c <process_received_frame>:
 /**
@@ -4949,8 +4949,8 @@ void process_received_frame(const char *buffer, uint16_t len) {
  800272c:	f507 7753 	add.w	r7, r7, #844	@ 0x34c
  8002730:	46bd      	mov	sp, r7
  8002732:	bd90      	pop	{r4, r7, pc}
- 8002734:	0800a408 	.word	0x0800a408
- 8002738:	0800a3bc 	.word	0x0800a3bc
+ 8002734:	0800a404 	.word	0x0800a404
+ 8002738:	0800a3b8 	.word	0x0800a3b8
 
 0800273c <process_protocol_data>:
 
@@ -5895,13 +5895,13 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
  8002e28:	f7fd fc2a 	bl	8000680 <UART_TX_FSend>
  8002e2c:	e03e      	b.n	8002eac <process_command+0x428>
  8002e2e:	bf00      	nop
- 8002e30:	0800a40c 	.word	0x0800a40c
- 8002e34:	0800a3bc 	.word	0x0800a3bc
+ 8002e30:	0800a408 	.word	0x0800a408
+ 8002e34:	0800a3b8 	.word	0x0800a3b8
  8002e38:	20002574 	.word	0x20002574
- 8002e3c:	0800a408 	.word	0x0800a408
- 8002e40:	0800a410 	.word	0x0800a410
+ 8002e3c:	0800a404 	.word	0x0800a404
+ 8002e40:	0800a40c 	.word	0x0800a40c
  8002e44:	20000000 	.word	0x20000000
- 8002e48:	0800a41c 	.word	0x0800a41c
+ 8002e48:	0800a418 	.word	0x0800a418
                                 }
                             } else {
                                 // No data found for given time offset
@@ -6255,12 +6255,12 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
             break;
  8003148:	e2c9      	b.n	80036de <process_command+0xc5a>
  800314a:	bf00      	nop
- 800314c:	0800a410 	.word	0x0800a410
- 8003150:	0800a3bc 	.word	0x0800a3bc
- 8003154:	0800a408 	.word	0x0800a408
- 8003158:	0800a42c 	.word	0x0800a42c
+ 800314c:	0800a40c 	.word	0x0800a40c
+ 8003150:	0800a3b8 	.word	0x0800a3b8
+ 8003154:	0800a404 	.word	0x0800a404
+ 8003158:	0800a428 	.word	0x0800a428
  800315c:	20000000 	.word	0x20000000
- 8003160:	0800a40c 	.word	0x0800a40c
+ 8003160:	0800a408 	.word	0x0800a408
 
         case GETINT_CMD:
             // Get current collection interval
@@ -6603,12 +6603,12 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
             break;
  800343e:	e156      	b.n	80036ee <process_command+0xc6a>
  8003440:	20000000 	.word	0x20000000
- 8003444:	0800a438 	.word	0x0800a438
- 8003448:	0800a3bc 	.word	0x0800a3bc
- 800344c:	0800a408 	.word	0x0800a408
+ 8003444:	0800a434 	.word	0x0800a434
+ 8003448:	0800a3b8 	.word	0x0800a3b8
+ 800344c:	0800a404 	.word	0x0800a404
  8003450:	20000004 	.word	0x20000004
- 8003454:	0800a40c 	.word	0x0800a40c
- 8003458:	0800a440 	.word	0x0800a440
+ 8003454:	0800a408 	.word	0x0800a408
+ 8003458:	0800a43c 	.word	0x0800a43c
  800345c:	20000005 	.word	0x20000005
 
         case GETTIME_CMD:
@@ -6953,12 +6953,12 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
  8003708:	bd90      	pop	{r4, r7, pc}
  800370a:	bf00      	nop
  800370c:	20000005 	.word	0x20000005
- 8003710:	0800a440 	.word	0x0800a440
- 8003714:	0800a3bc 	.word	0x0800a3bc
- 8003718:	0800a408 	.word	0x0800a408
+ 8003710:	0800a43c 	.word	0x0800a43c
+ 8003714:	0800a3b8 	.word	0x0800a3b8
+ 8003718:	0800a404 	.word	0x0800a404
  800371c:	20002444 	.word	0x20002444
  8003720:	40020800 	.word	0x40020800
- 8003724:	0800a40c 	.word	0x0800a40c
+ 8003724:	0800a408 	.word	0x0800a408
 
 08003728 <HAL_MspInit>:
 /* USER CODE END 0 */
@@ -8094,7 +8094,7 @@ LoopFillZerobss:
   ldr r1, =_edata
  8003c58:	20000064 	.word	0x20000064
   ldr r2, =_sidata
- 8003c5c:	0800a6ac 	.word	0x0800a6ac
+ 8003c5c:	0800a6a8 	.word	0x0800a6a8
   ldr r2, =_sbss
  8003c60:	20000064 	.word	0x20000064
   ldr r4, =_ebss
@@ -9905,7 +9905,7 @@ static uint32_t DMA_CalcBaseAndBitshift(DMA_HandleTypeDef *hdma)
  80045cc:	4770      	bx	lr
  80045ce:	bf00      	nop
  80045d0:	aaaaaaab 	.word	0xaaaaaaab
- 80045d4:	0800a660 	.word	0x0800a660
+ 80045d4:	0800a65c 	.word	0x0800a65c
 
 080045d8 <DMA_CheckFifoParam>:
   * @param  hdma       pointer to a DMA_HandleTypeDef structure that contains
@@ -18246,7 +18246,7 @@ HAL_StatusTypeDef HAL_RCC_ClockConfig(const RCC_ClkInitTypeDef  *RCC_ClkInitStru
  8007622:	bf00      	nop
  8007624:	40023c00 	.word	0x40023c00
  8007628:	40023800 	.word	0x40023800
- 800762c:	0800a648 	.word	0x0800a648
+ 800762c:	0800a644 	.word	0x0800a644
  8007630:	20000008 	.word	0x20000008
  8007634:	2000000c 	.word	0x2000000c
 
@@ -18294,7 +18294,7 @@ uint32_t HAL_RCC_GetPCLK1Freq(void)
  800766c:	4618      	mov	r0, r3
  800766e:	bd80      	pop	{r7, pc}
  8007670:	40023800 	.word	0x40023800
- 8007674:	0800a658 	.word	0x0800a658
+ 8007674:	0800a654 	.word	0x0800a654
 
 08007678 <HAL_RCC_GetPCLK2Freq>:
   * @note   Each time PCLK2 changes, this function must be called to update the
@@ -18320,7 +18320,7 @@ uint32_t HAL_RCC_GetPCLK2Freq(void)
  8007694:	4618      	mov	r0, r3
  8007696:	bd80      	pop	{r7, pc}
  8007698:	40023800 	.word	0x40023800
- 800769c:	0800a658 	.word	0x0800a658
+ 800769c:	0800a654 	.word	0x0800a654
 
 080076a0 <HAL_RCC_GetSysClockFreq>:
   *
@@ -23887,10 +23887,10 @@ static void UART_SetConfig(UART_HandleTypeDef *huart)
  8009a46:	4798      	blx	r3
  8009a48:	3601      	adds	r6, #1
  8009a4a:	e7f2      	b.n	8009a32 <__libc_init_array+0x1e>
- 8009a4c:	0800a6a4 	.word	0x0800a6a4
- 8009a50:	0800a6a4 	.word	0x0800a6a4
- 8009a54:	0800a6a4 	.word	0x0800a6a4
- 8009a58:	0800a6a8 	.word	0x0800a6a8
+ 8009a4c:	0800a6a0 	.word	0x0800a6a0
+ 8009a50:	0800a6a0 	.word	0x0800a6a0
+ 8009a54:	0800a6a0 	.word	0x0800a6a0
+ 8009a58:	0800a6a4 	.word	0x0800a6a4
 
 08009a5c <__retarget_lock_acquire_recursive>:
  8009a5c:	4770      	bx	lr
@@ -24186,11 +24186,11 @@ static void UART_SetConfig(UART_HandleTypeDef *huart)
  8009d10:	4638      	mov	r0, r7
  8009d12:	f000 f91b 	bl	8009f4c <_printf_i>
  8009d16:	e7ed      	b.n	8009cf4 <_svfiprintf_r+0x1c0>
- 8009d18:	0800a668 	.word	0x0800a668
- 8009d1c:	0800a672 	.word	0x0800a672
+ 8009d18:	0800a664 	.word	0x0800a664
+ 8009d1c:	0800a66e 	.word	0x0800a66e
  8009d20:	00000000 	.word	0x00000000
  8009d24:	08009a7d 	.word	0x08009a7d
- 8009d28:	0800a66e 	.word	0x0800a66e
+ 8009d28:	0800a66a 	.word	0x0800a66a
 
 08009d2c <sbrk_aligned>:
  8009d2c:	b570      	push	{r4, r5, r6, lr}
@@ -24659,8 +24659,8 @@ static void UART_SetConfig(UART_HandleTypeDef *huart)
  800a178:	2500      	movs	r5, #0
  800a17a:	f104 0619 	add.w	r6, r4, #25
  800a17e:	e7f5      	b.n	800a16c <_printf_i+0x220>
- 800a180:	0800a679 	.word	0x0800a679
- 800a184:	0800a68a 	.word	0x0800a68a
+ 800a180:	0800a675 	.word	0x0800a675
+ 800a184:	0800a686 	.word	0x0800a686
 
 0800a188 <__malloc_lock>:
  800a188:	4801      	ldr	r0, [pc, #4]	@ (800a190 <__malloc_lock+0x8>)
