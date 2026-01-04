@@ -121,6 +121,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C1_Init();
   MX_TIM3_Init();
+  TCS34725_Init(&hi2c1);
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim3);
   HAL_UART_Receive_IT(&huart2,&UART_RxBuf[0],1);
