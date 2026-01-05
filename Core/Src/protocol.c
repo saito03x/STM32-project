@@ -3,6 +3,8 @@
 #include "circular_buffer.h"
 #include "gpio.h"
 #include "tim.h"
+#include "i2c.h"
+#include "tcs34725.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -1072,10 +1074,11 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 	case RDHEX_CMD:
 		// Read normalized 8-bit color data in HEX format with TIME OFFSET
 	{
+		// 1. Sprawdzenie długości (teraz będzie zgodna, jak poprawisz protocol.h na 5)
 		if (frame->params_len != PARAM_LEN_RDHEX) {
 			error = WRLEN;
 		} else {
-			// 1. Parsowanie parametru czasu (5 cyfr ASCII)
+			// 2. Parsowanie parametru (00000 - 99999)
 			uint32_t time_offset = 0;
 			for (int i = 0; i < 5; i++) {
 				char digit = frame->params[i];
@@ -1087,43 +1090,41 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 			}
 
 			if (!error) {
+				// 3. Pobranie danych
 				ColorBufferEntry_t *entry = NULL;
-				extern volatile uint32_t timer_interval; // Używamy poprawnej zmiennej
-				uint32_t max_offset = COLOR_BUFFER_SIZE * timer_interval;
 
+				// Obsługa 00000 jako "daj najnowszy"
 				if (time_offset == 0) {
 					entry = ColorBuffer_GetLatest();
-				} else if (time_offset > max_offset) {
-					sprintf(data_buffer, "HEX00000000");
+				} else {
+					extern volatile uint32_t timer_interval;
+					uint32_t max_offset = COLOR_BUFFER_SIZE
+							* timer_interval;
+
+					if (time_offset <= max_offset) {
+						entry = ColorBuffer_GetByTimeOffset(time_offset);
+					}
+				}
+
+				if (entry != NULL) {
+					format_hex_data(data_buffer, sizeof(data_buffer),
+							&entry->data);
 					if (build_response_frame(response_buffer, response_size,
-					DEVICE_ID, frame->sender, frame->frame_id, data_buffer,
-							0)) {
+							DEVICE_ID, frame->sender, frame->frame_id,
+							data_buffer, 0)) {
 						UART_TX_FSend("%s", response_buffer);
 					}
 				} else {
-					if (entry != NULL) {
-						// Znaleziono dane - wyślij HEX
-						format_hex_data(data_buffer, sizeof(data_buffer),
-								&entry->data);
-						if (build_response_frame(response_buffer, response_size,
-								DEVICE_ID, frame->sender, frame->frame_id,
-								data_buffer, 0)) {
-							UART_TX_FSend("%s", response_buffer);
-						}
-					} else {
-						// Brak danych (pusty bufor lub offset poza zakresem)
-						sprintf(data_buffer, "HEX00000000");
-						if (build_response_frame(response_buffer, response_size,
-								DEVICE_ID, frame->sender, frame->frame_id,
-								data_buffer, 0)) {
-							UART_TX_FSend("%s", response_buffer);
-						}
+					sprintf(data_buffer, "HEX00000000");
+					if (build_response_frame(response_buffer, response_size,
+							DEVICE_ID, frame->sender, frame->frame_id,
+							data_buffer, 0)) {
+						UART_TX_FSend("%s", response_buffer);
 					}
 				}
 			}
 		}
 
-		// Obsługa błędów parsowania (WRLEN, WRCMD)
 		if (error) {
 			if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 					frame->sender, frame->frame_id, NULL, error)) {
@@ -1194,7 +1195,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 			char gain_char = frame->params[0];
 			if (gain_char >= '0' && gain_char <= '3') {
 				current_gain_index = gain_char - '0';
-				// TODO: Apply gain setting to TCS34725 sensor
+				TCS34725_WriteReg(&hi2c1, TCS34725_CONTROL, current_gain_index);
 				if (build_response_frame(response_buffer, response_size,
 				DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
 					UART_TX_FSend("%s", response_buffer);
@@ -1217,6 +1218,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		// Get current gain index
 	{
 		sprintf(data_buffer, "%01u", current_gain_index);
+		TCS34725_WriteReg(&hi2c1, TCS34725_ATIME, TIME_TABLE[current_time_index]);
 		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 				frame->sender, frame->frame_id, data_buffer, 0)) {
 			UART_TX_FSend("%s", response_buffer);

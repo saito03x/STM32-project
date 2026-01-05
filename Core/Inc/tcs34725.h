@@ -59,6 +59,7 @@ typedef struct {
 // Funkcje
 uint8_t TCS34725_Init(I2C_HandleTypeDef *hi2c);
 void TCS34725_ReadRawData(I2C_HandleTypeDef *hi2c, TCS34725_Data_t *data);
+void TCS34725_WriteReg(I2C_HandleTypeDef *hi2c, uint8_t reg, uint8_t value);
 
 #endif /* INC_TCS34725_H_ */
 

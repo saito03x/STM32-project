@@ -5,7 +5,7 @@ uint8_t dma_buffer[8];
 
 // Funkcja pomocnicza do zapisu rejestru
 // Zawsze dodajemy TCS34725_COMMAND_BIT do adresu rejestru
-static void TCS34725_WriteReg(I2C_HandleTypeDef *hi2c, uint8_t reg, uint8_t value) {
+void TCS34725_WriteReg(I2C_HandleTypeDef *hi2c, uint8_t reg, uint8_t value) {
     uint8_t data[2];
     data[0] = TCS34725_COMMAND_BIT | reg;
     data[1] = value;
