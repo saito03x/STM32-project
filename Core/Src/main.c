@@ -198,7 +198,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 			// Start DMA read of sensor data (non-blocking)
 			TCS34725_Start_DMA_Read(&hi2c1);
 
-			timer_counter = 0;
+			timer_counter=0;
 		}
 
 	}

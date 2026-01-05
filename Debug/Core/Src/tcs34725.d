@@ -29,7 +29,8 @@ Core/Src/tcs34725.o: ../Core/Src/tcs34725.c ../Core/Inc/tcs34725.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- ../Core/Inc/main.h
+ ../Core/Inc/main.h ../Core/Inc/circular_buffer.h ../Core/Inc/tcs34725.h \
+ ../Core/Inc/i2c.h
 ../Core/Inc/tcs34725.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -62,3 +63,6 @@ Core/Src/tcs34725.o: ../Core/Src/tcs34725.c ../Core/Inc/tcs34725.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
 ../Core/Inc/main.h:
+../Core/Inc/circular_buffer.h:
+../Core/Inc/tcs34725.h:
+../Core/Inc/i2c.h:

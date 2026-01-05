@@ -120,8 +120,8 @@ void TCS34725_Start_DMA_Read(I2C_HandleTypeDef *hi2c) {
  * @note Called automatically when DMA transfer completes
  */
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    // Check if this callback is for our sensor
-    if (hi2c->Instance == hi2c1.Instance) {  // Check against our I2C handle
+    // Check if this callback is for our sensor (STM32F446RE I2C1)
+    if (hi2c->Instance == hi2c1.Instance) {
         // Parse DMA buffer into sensor data structure
         TCS34725_Data_t sensor_data;
 
