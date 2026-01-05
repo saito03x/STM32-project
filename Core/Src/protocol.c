@@ -13,6 +13,23 @@ volatile uint8_t current_gain_index = 1;      // Default: 4x gain
 volatile uint8_t current_time_index = 4;      // Default: 154ms integration
 volatile uint8_t led_state = 0;               // Default: LED OFF
 
+
+const uint8_t GAIN_TABLE[GAIN_VALUES_COUNT] = {
+    TCS34725_GAIN_1X,
+    TCS34725_GAIN_4X,
+    TCS34725_GAIN_16X,
+    TCS34725_GAIN_60X
+};
+
+const uint16_t TIME_TABLE[TIME_VALUES_COUNT] = {
+    TCS34725_INTEGRATIONTIME_2_4MS, // Index 0
+    TCS34725_INTEGRATIONTIME_24MS,  // Index 1
+    TCS34725_INTEGRATIONTIME_50MS,  // Index 2
+    TCS34725_INTEGRATIONTIME_101MS, // Index 3
+    TCS34725_INTEGRATIONTIME_154MS, // Index 4
+    TCS34725_INTEGRATIONTIME_700MS  // Index 5
+};
+
 /**
  * @brief Format color data in ANS format (10-character zero-padded hex strings)
  * @param buffer Output buffer
@@ -23,10 +40,10 @@ volatile uint8_t led_state = 0;               // Default: LED OFF
 static int format_ans_data(char *buffer, size_t buffer_size,
 		TCS34725_Data_t *data) {
 	return snprintf(buffer, buffer_size, "ANS"
-			"R%05X"
-			"G%05X"
-			"B%05X"
-			"C%05X", data->r, data->g, data->b, data->c);
+			"R%05u"
+			"G%05u"
+			"B%05u"
+			"C%05u", data->r, data->g, data->b, data->c);
 }
 
 /**

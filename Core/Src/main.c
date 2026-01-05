@@ -195,13 +195,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 		timer_counter++;
 
 		if (timer_counter >= timer_interval) {
-			// Read sensor data
-			TCS34725_ReadRawData(&hi2c1, &colorData);
+			// Start DMA read of sensor data (non-blocking)
+			TCS34725_Start_DMA_Read(&hi2c1);
 
-			// Store data in circular buffer with timestamp
-			ColorBuffer_Put(&colorData, HAL_GetTick());
-
-			timer_counter=0;
+			timer_counter = 0;
 		}
 
 	}

@@ -1,6 +1,12 @@
 #include "tcs34725.h"
+#include "circular_buffer.h"
+#include "i2c.h"
 #include <stdint.h>
 
+// State machine variable
+volatile TCS_State_t sensor_state = TCS_STATE_READY;
+
+// DMA buffer for sensor data (8 bytes: C, R, G, B - 16-bit each, little endian)
 uint8_t dma_buffer[8];
 
 // Funkcja pomocnicza do zapisu rejestru
@@ -76,4 +82,59 @@ void TCS34725_ReadRawData(I2C_HandleTypeDef *hi2c, TCS34725_Data_t *data) {
     data->r = (uint16_t)(buffer[3] << 8) | buffer[2];
     data->g = (uint16_t)(buffer[5] << 8) | buffer[4];
     data->b = (uint16_t)(buffer[7] << 8) | buffer[6];
+}
+
+/**
+ * @brief Start DMA read of sensor data
+ * @param hi2c I2C handle
+ * @note Non-blocking function with state machine protection
+ */
+void TCS34725_Start_DMA_Read(I2C_HandleTypeDef *hi2c) {
+    // Check if sensor is ready for new DMA operation
+    if (sensor_state == TCS_STATE_READY) {
+        // Set state to busy to prevent concurrent operations
+        sensor_state = TCS_STATE_BUSY;
+
+        // Start DMA read: 8 bytes from CDATAL register with auto-increment
+        // Register address: COMMAND_BIT (0x80) | AUTO_INCREMENT (0x20) | CDATAL (0x14)
+        uint8_t reg_addr = TCS34725_COMMAND_BIT | 0x20 | TCS34725_CDATAL;
+
+        HAL_StatusTypeDef status = HAL_I2C_Mem_Read_DMA(hi2c,
+                                                       TCS34725_ADDRESS,
+                                                       reg_addr,
+                                                       I2C_MEMADD_SIZE_8BIT,
+                                                       dma_buffer,
+                                                       8);
+
+        // If DMA start failed, reset state
+        if (status != HAL_OK) {
+            sensor_state = TCS_STATE_READY;
+        }
+    }
+    // If busy, ignore the call (state machine protection)
+}
+
+/**
+ * @brief DMA completion callback for I2C memory read
+ * @param hi2c I2C handle
+ * @note Called automatically when DMA transfer completes
+ */
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+    // Check if this callback is for our sensor
+    if (hi2c->Instance == hi2c1.Instance) {  // Check against our I2C handle
+        // Parse DMA buffer into sensor data structure
+        TCS34725_Data_t sensor_data;
+
+        // Little Endian: LSB first, then MSB
+        sensor_data.c = (uint16_t)(dma_buffer[1] << 8) | dma_buffer[0];  // CDATAL, CDATAH
+        sensor_data.r = (uint16_t)(dma_buffer[3] << 8) | dma_buffer[2];  // RDATAL, RDATAH
+        sensor_data.g = (uint16_t)(dma_buffer[5] << 8) | dma_buffer[4];  // GDATAL, GDATAH
+        sensor_data.b = (uint16_t)(dma_buffer[7] << 8) | dma_buffer[6];  // BDATAL, BDATAH
+
+        // Add data to circular buffer with current timestamp
+        ColorBuffer_Put(&sensor_data, HAL_GetTick());
+
+        // Reset state to ready for next operation
+        sensor_state = TCS_STATE_READY;
+    }
 }

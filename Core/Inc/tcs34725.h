@@ -48,6 +48,12 @@
 #define TCS34725_GAIN_16X   0x02
 #define TCS34725_GAIN_60X   0x03
 
+// State machine for DMA operations
+typedef enum {
+    TCS_STATE_READY,
+    TCS_STATE_BUSY
+} TCS_State_t;
+
 // Struktura do przechowywania surowych danych
 typedef struct {
     uint16_t c; // Clear
@@ -60,6 +66,12 @@ typedef struct {
 uint8_t TCS34725_Init(I2C_HandleTypeDef *hi2c);
 void TCS34725_ReadRawData(I2C_HandleTypeDef *hi2c, TCS34725_Data_t *data);
 void TCS34725_WriteReg(I2C_HandleTypeDef *hi2c, uint8_t reg, uint8_t value);
+
+// DMA functions
+void TCS34725_Start_DMA_Read(I2C_HandleTypeDef *hi2c);
+
+// External state variable (defined in tcs34725.c)
+extern volatile TCS_State_t sensor_state;
 
 #endif /* INC_TCS34725_H_ */
 
