@@ -85,7 +85,6 @@ typedef enum {
 #define WRFRM_STR "WRFRM"
 #define WRTIME_STR "WRTIME"
 #define NODATA_STR "NODATA"
-#define OUTOFRANGE_STR "OUTOFRANGE"
 
 //KODY BŁEDÓW
 typedef enum {
@@ -96,7 +95,6 @@ typedef enum {
     WRFRM,
     WRTIME,
     NODATA,
-    OUTOFRANGE,
 } ErrorCode;
 
 // KODY BŁĘDÓW PARSOWANIA

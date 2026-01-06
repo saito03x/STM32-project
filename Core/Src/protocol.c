@@ -1043,12 +1043,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 				extern volatile uint32_t timer_interval;
 				uint32_t max_offset = COLOR_BUFFER_SIZE * timer_interval;
 				if (time_offset == 0 || time_offset > max_offset) {
-					sprintf(data_buffer, OUTOFRANGE_STR);
-					if (build_response_frame(response_buffer, response_size,
-					DEVICE_ID, frame->sender, frame->frame_id, data_buffer,
-							0)) {
-						UART_TX_FSend("%s", response_buffer);
-					}
+					error = WRPOS; // Invalid time offset range
 				} else {
 					ColorBufferEntry_t *entry = ColorBuffer_GetByTimeOffset(
 							time_offset);
