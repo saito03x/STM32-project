@@ -10,7 +10,7 @@
 
 // Global configuration variables
 volatile uint8_t current_gain_index = 1;      // Default: 4x gain
-volatile uint8_t current_time_index = 4;      // Default: 154ms integration
+volatile uint8_t current_time_index = 3;      // Default: 154ms integration
 volatile uint8_t led_state = 0;               // Default: LED OFF
 
 
@@ -24,10 +24,9 @@ const uint8_t GAIN_TABLE[GAIN_VALUES_COUNT] = {
 const uint16_t TIME_TABLE[TIME_VALUES_COUNT] = {
     TCS34725_INTEGRATIONTIME_2_4MS, // Index 0
     TCS34725_INTEGRATIONTIME_24MS,  // Index 1
-    TCS34725_INTEGRATIONTIME_50MS,  // Index 2
-    TCS34725_INTEGRATIONTIME_101MS, // Index 3
-    TCS34725_INTEGRATIONTIME_154MS, // Index 4
-    TCS34725_INTEGRATIONTIME_700MS  // Index 5
+    TCS34725_INTEGRATIONTIME_101MS, // Index 2
+    TCS34725_INTEGRATIONTIME_154MS, // Index 3
+    TCS34725_INTEGRATIONTIME_700MS  // Index 4
 };
 
 /**
@@ -82,6 +81,22 @@ uint16_t convert_hex_to_int(const char *hex_str, size_t len) {
 		}
 	}
 	return result;
+}
+
+/**
+ * @brief Get integration time in milliseconds for given index
+ * @param index Integration time index (0-5)
+ * @return Integration time in ms, or 0 if invalid index
+ */
+uint16_t get_integration_time_ms(uint8_t index) {
+    switch (index) {
+        case 0: return 3;   // 2.4ms rounded up
+        case 1: return 24;  // 24ms
+        case 2: return 101; // 101ms
+        case 3: return 154; // 154ms
+        case 4: return 700; // 700ms
+        default: return 0;  // Invalid index
+    }
 }
 
 /**
@@ -621,6 +636,9 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
 		case WRFRM:
 			strncpy(raw_data, WRFRM_STR, sizeof(raw_data) - 1);
 			break;
+		case WRTIME:
+			strncpy(raw_data, WRTIME_STR, sizeof(raw_data) - 1);
+			break;
 		default:
 			strncpy(raw_data, WRFRM_STR, sizeof(raw_data) - 1);
 			break;
@@ -1083,13 +1101,18 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 			}
 
 			if (!error && new_interval > 0) {
-				extern volatile uint32_t timer_interval;
+				// Check if new interval is longer than current integration time
+				uint16_t integration_time = get_integration_time_ms(current_time_index);
+				if (new_interval <= integration_time) {
+					error = WRTIME; // Interval must be longer than integration time
+				} else {
+					extern volatile uint32_t timer_interval;
+					timer_interval = new_interval;
 
-				timer_interval = new_interval;
-
-				if (build_response_frame(response_buffer, response_size,
-				DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
-					UART_TX_FSend("%s", response_buffer);
+					if (build_response_frame(response_buffer, response_size,
+					DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
+						UART_TX_FSend("%s", response_buffer);
+					}
 				}
 			} else {
 				error = WRCMD;
@@ -1164,12 +1187,22 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 			error = WRLEN;
 		} else {
 			char time_char = frame->params[0];
-			if (time_char >= '0' && time_char <= '5') {
-				current_time_index = time_char - '0';
-				// TODO: Apply integration time setting to TCS34725 sensor
-				if (build_response_frame(response_buffer, response_size,
-				DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
-					UART_TX_FSend("%s", response_buffer);
+			if (time_char >= '0' && time_char <= '4') {
+				uint8_t new_time_index = time_char - '0';
+
+				// Check if current timer interval is longer than new integration time
+				extern volatile uint32_t timer_interval;
+				uint16_t new_integration_time = get_integration_time_ms(new_time_index);
+				if (timer_interval <= new_integration_time) {
+					error = WRTIME; // Timer interval must be longer than integration time
+				} else {
+					current_time_index = new_time_index;
+					// Apply integration time setting to TCS34725 sensor
+					TCS34725_WriteReg(&hi2c1, TCS34725_ATIME, TIME_TABLE[new_time_index]);
+					if (build_response_frame(response_buffer, response_size,
+					DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
+						UART_TX_FSend("%s", response_buffer);
+					}
 				}
 			} else {
 				error = WRCMD;

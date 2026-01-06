@@ -134,6 +134,10 @@ int main(void)
   {
    //Przetwarzanie znakow ktore przychodza do bufora kolejki UART
     process_protocol_data();
+
+    // Handle TCS34725 sensor state machine
+    TCS34725_HandleLoop(&hi2c1);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

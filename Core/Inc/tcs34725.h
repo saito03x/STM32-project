@@ -37,7 +37,6 @@
 // Czas integracji (ATIME) [cite: 720]
 #define TCS34725_INTEGRATIONTIME_2_4MS  0xFF
 #define TCS34725_INTEGRATIONTIME_24MS   0xF6
-#define TCS34725_INTEGRATIONTIME_50MS   0xEB
 #define TCS34725_INTEGRATIONTIME_101MS  0xD5
 #define TCS34725_INTEGRATIONTIME_154MS  0xC0
 #define TCS34725_INTEGRATIONTIME_700MS  0x00
@@ -48,10 +47,11 @@
 #define TCS34725_GAIN_16X   0x02
 #define TCS34725_GAIN_60X   0x03
 
-// State machine for DMA operations
+// State machine for initialization and DMA operations
 typedef enum {
-    TCS_STATE_READY,
-    TCS_STATE_BUSY
+    TCS_STATE_POWERUP_WAIT,  // Waiting for oscillator startup after PON
+    TCS_STATE_READY,         // Ready for operations
+    TCS_STATE_BUSY           // DMA operation in progress
 } TCS_State_t;
 
 // Struktura do przechowywania surowych danych
@@ -67,7 +67,8 @@ uint8_t TCS34725_Init(I2C_HandleTypeDef *hi2c);
 void TCS34725_ReadRawData(I2C_HandleTypeDef *hi2c, TCS34725_Data_t *data);
 void TCS34725_WriteReg(I2C_HandleTypeDef *hi2c, uint8_t reg, uint8_t value);
 
-// DMA functions
+// Initialization and DMA functions
+void TCS34725_HandleLoop(I2C_HandleTypeDef *hi2c);
 void TCS34725_Start_DMA_Read(I2C_HandleTypeDef *hi2c);
 
 // External state variable (defined in tcs34725.c)

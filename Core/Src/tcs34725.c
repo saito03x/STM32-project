@@ -9,6 +9,9 @@ volatile TCS_State_t sensor_state = TCS_STATE_READY;
 // DMA buffer for sensor data (8 bytes: C, R, G, B - 16-bit each, little endian)
 uint8_t dma_buffer[8];
 
+// Power-on timing variable
+static uint32_t tcs_poweron_tick = 0;
+
 // Funkcja pomocnicza do zapisu rejestru
 // Zawsze dodajemy TCS34725_COMMAND_BIT do adresu rejestru
 void TCS34725_WriteReg(I2C_HandleTypeDef *hi2c, uint8_t reg, uint8_t value) {
@@ -30,7 +33,7 @@ static uint8_t TCS34725_ReadReg8(I2C_HandleTypeDef *hi2c, uint8_t reg) {
 }
 
 /**
- * @brief Inicjalizacja czujnika
+ * @brief Inicjalizacja czujnika (nieblokująca)
  * @return 1 jeśli OK (znaleziono ID 0x44), 0 jeśli błąd
  */
 uint8_t TCS34725_Init(I2C_HandleTypeDef *hi2c) {
@@ -41,24 +44,20 @@ uint8_t TCS34725_Init(I2C_HandleTypeDef *hi2c) {
         return 0; // Błąd: Nie wykryto czujnika lub zły model
     }
 
-    // 2. Konfiguracja czasu integracji (np. 154ms) [cite: 720]
+    // 2. Konfiguracja czasu integracji (domyślnie 154ms) [cite: 720]
     TCS34725_WriteReg(hi2c, TCS34725_ATIME, TCS34725_INTEGRATIONTIME_154MS);
 
-    // 3. Konfiguracja wzmocnienia (np. 4x) [cite: 794]
+    // 3. Konfiguracja wzmocnienia (domyślnie 4x) [cite: 794]
     TCS34725_WriteReg(hi2c, TCS34725_CONTROL, TCS34725_GAIN_4X);
 
     // 4. Włączenie zasilania (PON) [cite: 705]
     TCS34725_WriteReg(hi2c, TCS34725_ENABLE, TCS34725_ENABLE_PON);
-    HAL_Delay(3); // Wymagane > 2.4ms opóźnienia po PON [cite: 708]
 
-    // 5. Włączenie przetwornika ADC (AEN) [cite: 705]
-    // Utrzymujemy PON i dodajemy AEN
-    TCS34725_WriteReg(hi2c, TCS34725_ENABLE, TCS34725_ENABLE_PON | TCS34725_ENABLE_AEN);
+    // 5. Zapisz czas włączenia zasilania i ustaw stan oczekiwania
+    tcs_poweron_tick = HAL_GetTick();
+    sensor_state = TCS_STATE_POWERUP_WAIT;
 
-    // Opcjonalnie: Poczekaj na pierwszy pomiar (czas integracji)
-    HAL_Delay(154);
-
-    return 1; // Sukces
+    return 1; // Sukces - inicjalizacja rozpoczęta
 }
 
 /**
@@ -85,11 +84,31 @@ void TCS34725_ReadRawData(I2C_HandleTypeDef *hi2c, TCS34725_Data_t *data) {
 }
 
 /**
+ * @brief Handle sensor initialization state machine (call in main loop)
+ * @param hi2c I2C handle
+ */
+void TCS34725_HandleLoop(I2C_HandleTypeDef *hi2c) {
+    if (sensor_state == TCS_STATE_POWERUP_WAIT) {
+        // Check if 3ms have passed since power-on (required > 2.4ms)
+        if ((HAL_GetTick() - tcs_poweron_tick) >= 3) {
+            // Enable ADC (PON + AEN) [cite: 705]
+            TCS34725_WriteReg(hi2c, TCS34725_ENABLE, TCS34725_ENABLE_PON | TCS34725_ENABLE_AEN);
+            sensor_state = TCS_STATE_READY;
+        }
+    }
+}
+
+/**
  * @brief Start DMA read of sensor data
  * @param hi2c I2C handle
  * @note Non-blocking function with state machine protection
  */
 void TCS34725_Start_DMA_Read(I2C_HandleTypeDef *hi2c) {
+    // Check if sensor is fully initialized and ready for DMA operation
+    if (sensor_state != TCS_STATE_READY) {
+        return; // Sensor not ready yet
+    }
+
     // Check if sensor is ready for new DMA operation
     if (sensor_state == TCS_STATE_READY) {
         // Set state to busy to prevent concurrent operations

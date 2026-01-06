@@ -83,6 +83,7 @@ typedef enum {
 #define WRLEN_STR "WRLEN"
 #define WRPOS_STR "WRPOS"
 #define WRFRM_STR "WRFRM"
+#define WRTIME_STR "WRTIME"
 #define NODATA_STR "NODATA"
 #define OUTOFRANGE_STR "OUTOFRANGE"
 
@@ -93,6 +94,7 @@ typedef enum {
     WRLEN,
     WRPOS,
     WRFRM,
+    WRTIME,
     NODATA,
     OUTOFRANGE,
 } ErrorCode;
@@ -151,7 +153,7 @@ extern volatile uint8_t led_state;               // STAN LED
 
 // DLUGOSCI TABLIC USTAWIEN
 #define GAIN_VALUES_COUNT 4
-#define TIME_VALUES_COUNT 6
+#define TIME_VALUES_COUNT 5
 
 // TABLICA GAIN
 extern const uint8_t GAIN_TABLE[GAIN_VALUES_COUNT];
