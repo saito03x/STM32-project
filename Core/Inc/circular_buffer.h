@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include "tcs34725.h"
 
-// UART buffers
 #define UART_TXBUF_LEN 1512
 #define UART_RXBUF_LEN 128
 
@@ -15,20 +14,18 @@ extern volatile int UART_TX_Busy;
 extern volatile int UART_RX_Empty;
 extern volatile int UART_RX_Busy;
 
-// Color sensor data buffer
-#define COLOR_BUFFER_SIZE 600  // Minimum 600 entries as per requirements
+
+#define COLOR_BUFFER_SIZE 600
 
 typedef struct {
     TCS34725_Data_t data;
-    uint32_t timestamp;  // Timestamp in milliseconds
+    uint32_t timestamp;
 } ColorBufferEntry_t;
 
 extern ColorBufferEntry_t ColorBuffer[COLOR_BUFFER_SIZE];
-extern volatile uint32_t ColorBuffer_Head;
-extern volatile uint32_t ColorBuffer_Tail;
-extern volatile uint32_t ColorBuffer_Count;
+extern volatile uint32_t ColorBuffer_WritePos;
+extern volatile uint8_t ColorBuffer_DataAvailable;  // Flag indicating if data collection started
 
-// External reference to current collection interval (defined in main.c)
 extern volatile uint32_t timer_interval;
 
 uint8_t UART_RX_IsEmpty(void);
@@ -39,7 +36,6 @@ uint8_t UART_RX_GetLine(char *buf);
 
 void UART_TX_FSend(char* format, ...);
 
-// Color buffer functions
 uint8_t ColorBuffer_IsEmpty(void);
 uint8_t ColorBuffer_IsFull(void);
 uint32_t ColorBuffer_GetCount(void);

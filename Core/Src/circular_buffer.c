@@ -57,72 +57,55 @@ void UART_TX_FSend(char *format, ...) {
 	__enable_irq();
 }
 
-// Color sensor data buffer implementation
+// BUFER KOLOROWY
 ColorBufferEntry_t ColorBuffer[COLOR_BUFFER_SIZE];
-volatile uint32_t ColorBuffer_Head = 0;
-volatile uint32_t ColorBuffer_Tail = 0;
-volatile uint32_t ColorBuffer_Count = 0;
+volatile uint32_t ColorBuffer_WritePos = 0;  // POZYCJA ZAPISU
+volatile uint8_t ColorBuffer_DataAvailable = 0;  // FLAGA CZY ROZPOCZETO ZBIERANIE DANYCH
 
 /**
- * @brief Check if color buffer is empty
- * @return 1 if empty, 0 otherwise
+ * @brief Sprawdzenie czy bufor jest pusty
+ * @return 1 jeśli pusty, 0 jeśli wystęoują w nim pomiary
  */
 uint8_t ColorBuffer_IsEmpty(void) {
-    return (ColorBuffer_Count == 0);
+    return 0;
 }
 
 /**
- * @brief Check if color buffer is full
- * @return 1 if full, 0 otherwise
- */
-uint8_t ColorBuffer_IsFull(void) {
-    return (ColorBuffer_Count == COLOR_BUFFER_SIZE);
-}
-
-/**
- * @brief Get number of entries in color buffer
- * @return Number of entries
- */
-uint32_t ColorBuffer_GetCount(void) {
-    return ColorBuffer_Count;
-}
-
-/**
- * @brief Add new color data entry to buffer
- * @param data Pointer to TCS34725_Data_t structure
- * @param timestamp Timestamp in milliseconds
- * @return 1 if successful, 0 if buffer is full
+ * @brief Dodanie nowego pomiaru do bufora
+ * @param data Wskaźnik na strukturę TCS34725_Data_t
+ * @param timestamp Czas w milisekundach
+ * @return 
  */
 uint8_t ColorBuffer_Put(TCS34725_Data_t *data, uint32_t timestamp) {
-    if (ColorBuffer_IsFull()) {
-        return 0; // Buffer is full
-    }
-
     __disable_irq();
-    ColorBuffer[ColorBuffer_Head].data = *data;
-    ColorBuffer[ColorBuffer_Head].timestamp = timestamp;
-    ColorBuffer_Head = (ColorBuffer_Head + 1) % COLOR_BUFFER_SIZE;
-    ColorBuffer_Count++;
+
+    // Zapisuje dane i przesuwa pozycję zapisu
+    ColorBuffer[ColorBuffer_WritePos].data = *data;
+    ColorBuffer[ColorBuffer_WritePos].timestamp = timestamp;
+    ColorBuffer_WritePos = (ColorBuffer_WritePos + 1) % COLOR_BUFFER_SIZE;
+
+    ColorBuffer_DataAvailable = 1;
+
     __enable_irq();
 
     return 1;
 }
 
 /**
- * @brief Get latest (most recent) color data entry
- * @return Pointer to ColorBufferEntry_t or NULL if buffer is empty
+ * @brief Pobranie najnowszego pomiaru
+ * @return Wskaźnik na strukturę ColorBufferEntry_t
  */
 ColorBufferEntry_t* ColorBuffer_GetLatest(void) {
-    if (ColorBuffer_IsEmpty()) {
-        return NULL;
+    // Sprawdzenie czy zbieranie danych zostało rozpoczęte
+    if (!ColorBuffer_DataAvailable) {
+        return NULL; // Brak danych
     }
 
-    // Latest entry is at head-1 position (circular buffer)
     uint32_t latest_index;
-    if (ColorBuffer_Head == 0) {
+    if (ColorBuffer_WritePos == 0) {
         latest_index = COLOR_BUFFER_SIZE - 1;
     } else {
-        latest_index = ColorBuffer_Head - 1;
+        latest_index = ColorBuffer_WritePos - 1;
     }
 
     return &ColorBuffer[latest_index];
@@ -134,10 +117,6 @@ ColorBufferEntry_t* ColorBuffer_GetLatest(void) {
  * @return Pointer to ColorBufferEntry_t or NULL if not found or out of range
  */
 ColorBufferEntry_t* ColorBuffer_GetByTimeOffset(uint32_t timeOffsetMs) {
-    if (ColorBuffer_IsEmpty()) {
-        return NULL;
-    }
-
     // Validate time offset range: 00001 - Tmax = 600 * Tint
     uint32_t maxOffset = COLOR_BUFFER_SIZE * timer_interval;
     if (timeOffsetMs == 0 || timeOffsetMs > maxOffset) {
@@ -148,48 +127,37 @@ ColorBufferEntry_t* ColorBuffer_GetByTimeOffset(uint32_t timeOffsetMs) {
     uint32_t currentTime = HAL_GetTick();
     uint32_t targetTime = currentTime - timeOffsetMs;
 
-    // Start from latest entry and go backwards
+    // Start from latest entry (write_pos - 1) and search backwards through entire buffer
     uint32_t index;
-    if (ColorBuffer_Head == 0) {
+    if (ColorBuffer_WritePos == 0) {
         index = COLOR_BUFFER_SIZE - 1;
     } else {
-        index = ColorBuffer_Head - 1;
+        index = ColorBuffer_WritePos - 1;
     }
 
-    uint32_t checked = 0;
-
-    while (checked < ColorBuffer_Count) {
+    // Search through all buffer entries (circular)
+    for (uint32_t i = 0; i < COLOR_BUFFER_SIZE; i++) {
         if (ColorBuffer[index].timestamp <= targetTime) {
             // Found entry that is at or before target time
             return &ColorBuffer[index];
         }
 
-        // Move to previous entry
+        // Move to previous entry (circular)
         if (index == 0) {
             index = COLOR_BUFFER_SIZE - 1;
         } else {
             index--;
         }
-        checked++;
     }
-
-    // If no exact match found, return oldest available entry
-    if (ColorBuffer_Count > 0) {
-        // Return oldest entry (tail)
-        return &ColorBuffer[ColorBuffer_Tail];
-    }
-
     return NULL;
 }
 
 /**
- * @brief Clear color buffer
+ * @brief Clear color buffer (reset write position)
  */
 void ColorBuffer_Clear(void) {
     __disable_irq();
-    ColorBuffer_Head = 0;
-    ColorBuffer_Tail = 0;
-    ColorBuffer_Count = 0;
+    ColorBuffer_WritePos = 0;
     __enable_irq();
 }
 

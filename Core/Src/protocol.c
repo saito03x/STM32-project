@@ -47,25 +47,6 @@ static int format_ans_data(char *buffer, size_t buffer_size,
 }
 
 /**
- * @brief Format color data in HEX format (normalized to 8-bit)
- * @param buffer Output buffer
- * @param buffer_size Size of output buffer
- * @param data Pointer to color data
- * @return Number of characters written
- */
-static int format_hex_data(char *buffer, size_t buffer_size,
-		TCS34725_Data_t *data) {
-	// Normalize 16-bit values (0-65535) to 8-bit (0-255)
-	uint8_t r_norm = (uint8_t) ((data->r * 255ULL) / 65535);
-	uint8_t g_norm = (uint8_t) ((data->g * 255ULL) / 65535);
-	uint8_t b_norm = (uint8_t) ((data->b * 255ULL) / 65535);
-	uint8_t c_norm = (uint8_t) ((data->c * 255ULL) / 65535);
-
-	return snprintf(buffer, buffer_size, "HEX%02X%02X%02X%02X", r_norm, g_norm,
-			b_norm, c_norm);
-}
-
-/**
  * @brief Konwertuje string cyfr ASCII na liczbę całkowitą
  * @param str Wskaźnik do stringu z cyframi ASCII
  * @return Przekonwertowana wartość lub -1 w przypadku błędu
@@ -205,9 +186,6 @@ Command parse_command(const char *command_str) {
 	if (strcmp(command_str, CMD_STR_RDARC) == 0) {
 		return RDARC_CMD;
 	}
-	if (strcmp(command_str, CMD_STR_RDHEX) == 0) {
-		return RDHEX_CMD;
-	}
 	if (strcmp(command_str, CMD_STR_SETLED) == 0) {
 		return SETLED_CMD;
 	}
@@ -233,8 +211,6 @@ uint8_t get_command_param_len(Command cmd) {
 		return PARAM_LEN_SETTIME;
 	case RDARC_CMD:
 		return PARAM_LEN_RDARC;
-	case RDHEX_CMD:
-		return PARAM_LEN_RDHEX;
 	case SETLED_CMD:
 		return PARAM_LEN_SETLED;
 	case START_CMD:
@@ -1017,8 +993,8 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 				UART_TX_FSend("%s", response_buffer);
 			}
 		} else {
-			// No data available
-			sprintf(data_buffer, "ANSNODATA");
+			// No data collected yet (START command not executed)
+			sprintf(data_buffer, NODATA_STR);
 			if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 					frame->sender, frame->frame_id, data_buffer, 0)) {
 				UART_TX_FSend("%s", response_buffer);
@@ -1049,7 +1025,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 				extern volatile uint32_t timer_interval;
 				uint32_t max_offset = COLOR_BUFFER_SIZE * timer_interval;
 				if (time_offset == 0 || time_offset > max_offset) {
-					sprintf(data_buffer, "ANSOUTOFRANGE");
+					sprintf(data_buffer, OUTOFRANGE_STR);
 					if (build_response_frame(response_buffer, response_size,
 					DEVICE_ID, frame->sender, frame->frame_id, data_buffer,
 							0)) {
@@ -1068,7 +1044,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 						}
 					} else {
 						// No data found for given time offset
-						sprintf(data_buffer, "ANSNODATA");
+						sprintf(data_buffer, NODATA_STR);
 						if (build_response_frame(response_buffer, response_size,
 						DEVICE_ID, frame->sender, frame->frame_id, data_buffer,
 								0)) {
@@ -1088,68 +1064,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 	}
 		break;
 
-	case RDHEX_CMD:
-		// Read normalized 8-bit color data in HEX format with TIME OFFSET
-	{
-		// 1. Sprawdzenie długości (teraz będzie zgodna, jak poprawisz protocol.h na 5)
-		if (frame->params_len != PARAM_LEN_RDHEX) {
-			error = WRLEN;
-		} else {
-			// 2. Parsowanie parametru (00000 - 99999)
-			uint32_t time_offset = 0;
-			for (int i = 0; i < 5; i++) {
-				char digit = frame->params[i];
-				if (digit < '0' || digit > '9') {
-					error = WRCMD;
-					break;
-				}
-				time_offset = time_offset * 10 + (digit - '0');
-			}
-
-			if (!error) {
-				// 3. Pobranie danych
-				ColorBufferEntry_t *entry = NULL;
-
-				// Obsługa 00000 jako "daj najnowszy"
-				if (time_offset == 0) {
-					entry = ColorBuffer_GetLatest();
-				} else {
-					extern volatile uint32_t timer_interval;
-					uint32_t max_offset = COLOR_BUFFER_SIZE
-							* timer_interval;
-
-					if (time_offset <= max_offset) {
-						entry = ColorBuffer_GetByTimeOffset(time_offset);
-					}
-				}
-
-				if (entry != NULL) {
-					format_hex_data(data_buffer, sizeof(data_buffer),
-							&entry->data);
-					if (build_response_frame(response_buffer, response_size,
-							DEVICE_ID, frame->sender, frame->frame_id,
-							data_buffer, 0)) {
-						UART_TX_FSend("%s", response_buffer);
-					}
-				} else {
-					sprintf(data_buffer, "HEX00000000");
-					if (build_response_frame(response_buffer, response_size,
-							DEVICE_ID, frame->sender, frame->frame_id,
-							data_buffer, 0)) {
-						UART_TX_FSend("%s", response_buffer);
-					}
-				}
-			}
-		}
-
-		if (error) {
-			if (build_response_frame(response_buffer, response_size, DEVICE_ID,
-					frame->sender, frame->frame_id, NULL, error)) {
-				UART_TX_FSend("%s", response_buffer);
-			}
-		}
-	}
-		break;
 
 	case SETINT_CMD:
 		// Set collection interval (5 digits)
@@ -1195,7 +1109,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		// Get current collection interval
 	{
 		extern volatile uint32_t timer_interval;
-		sprintf(data_buffer, "%05lu", timer_interval);
+		sprintf(data_buffer, INT_PREFIX "%05lu", timer_interval);
 		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 				frame->sender, frame->frame_id, data_buffer, 0)) {
 			UART_TX_FSend("%s", response_buffer);
@@ -1234,7 +1148,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 	case GETGAIN_CMD:
 		// Get current gain index
 	{
-		sprintf(data_buffer, "%01u", current_gain_index);
+		sprintf(data_buffer, GAIN_PREFIX "%01u", current_gain_index);
 		TCS34725_WriteReg(&hi2c1, TCS34725_ATIME, TIME_TABLE[current_time_index]);
 		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 				frame->sender, frame->frame_id, data_buffer, 0)) {
@@ -1274,7 +1188,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 	case GETTIME_CMD:
 		// Get current integration time index
 	{
-		sprintf(data_buffer, "%01u", current_time_index);
+		sprintf(data_buffer, TIME_PREFIX "%01u", current_time_index);
 		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 				frame->sender, frame->frame_id, data_buffer, 0)) {
 			UART_TX_FSend("%s", response_buffer);
@@ -1324,13 +1238,13 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		GPIO_PinState actual_state = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_3);
 		uint8_t actual_led_state = (actual_state == GPIO_PIN_SET) ? 1 : 0;
 
-		sprintf(data_buffer, "%01u", actual_led_state);
+		sprintf(data_buffer, LED_PREFIX "%01u", actual_led_state);
 		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 				frame->sender, frame->frame_id, data_buffer, 0)) {
 			UART_TX_FSend("%s", response_buffer);
 		}
 	}
-		break;
+	break;
 
 	default:
 		// Unknown command

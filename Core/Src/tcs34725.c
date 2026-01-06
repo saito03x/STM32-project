@@ -106,12 +106,11 @@ void TCS34725_Start_DMA_Read(I2C_HandleTypeDef *hi2c) {
                                                        dma_buffer,
                                                        8);
 
-        // If DMA start failed, reset state
         if (status != HAL_OK) {
             sensor_state = TCS_STATE_READY;
         }
     }
-    // If busy, ignore the call (state machine protection)
+    
 }
 
 /**
@@ -133,7 +132,6 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 
         // Add data to circular buffer with current timestamp
         ColorBuffer_Put(&sensor_data, HAL_GetTick());
-
         // Reset state to ready for next operation
         sensor_state = TCS_STATE_READY;
     }

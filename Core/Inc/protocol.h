@@ -25,7 +25,7 @@
 #define MIN_FRAME_LEN 17
 
 //MAKSYMALNA DLUGOSC RAMKI
-#define MAX_FRAME_LEN  (MAX_PAYLOAD_LEN + MIN_FRAME_LEN)
+#define MAX_FRAME_LEN  (MAX_PAYLOAD_LEN * 2 + MIN_FRAME_LEN + 1)
 
 //KOMENDY TEKSTOWO
 #define CMD_STR_START   "START"
@@ -40,7 +40,6 @@
 #define CMD_STR_GETLED  "GETLED"
 #define CMD_STR_RDRAW   "RDRAW"
 #define CMD_STR_RDARC   "RDARC"
-#define CMD_STR_RDHEX   "RDHEX"
 
 //KOMENDY DLUGOSC PARAMETROW
 #define PARAM_LEN_SETINT    5
@@ -48,7 +47,6 @@
 #define PARAM_LEN_SETTIME   1
 #define PARAM_LEN_SETLED    1
 #define PARAM_LEN_RDARC     5
-#define PARAM_LEN_RDHEX     5
 
 //KOMENDY ENUM
 typedef enum {
@@ -69,13 +67,15 @@ typedef enum {
 
     RDRAW_CMD,
     RDARC_CMD,
-    RDHEX_CMD,
 } Command;
 
 //PREFIKSY I ODPOWIEDZ POTWIERDZAJACA
 #define RESP_OK             "OK"
 #define RESP_ANS_PREFIX     "ANS"
-#define RESP_HEX_PREFIX     "HEX"
+#define GAIN_PREFIX         "GAIN"
+#define TIME_PREFIX         "TIME"
+#define LED_PREFIX          "LED"
+#define INT_PREFIX          "INT"
 
 //KODY BLEDOW TEKSTOWO
 #define WRCHSUM_STR "WRCHSUM"
@@ -83,6 +83,8 @@ typedef enum {
 #define WRLEN_STR "WRLEN"
 #define WRPOS_STR "WRPOS"
 #define WRFRM_STR "WRFRM"
+#define NODATA_STR "NODATA"
+#define OUTOFRANGE_STR "OUTOFRANGE"
 
 //KODY BŁEDÓW
 typedef enum {
@@ -91,6 +93,8 @@ typedef enum {
     WRLEN,
     WRPOS,
     WRFRM,
+    NODATA,
+    OUTOFRANGE,
 } ErrorCode;
 
 // KODY BŁĘDÓW PARSOWANIA
@@ -140,19 +144,19 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
                          const char *receiver, uint8_t frame_id, const char *response_data, ErrorCode error);
 void process_protocol_data(void);
 
-// Global configuration variables (extern declarations)
-extern volatile uint8_t current_gain_index;      // 0-3 for gain settings
-extern volatile uint8_t current_time_index;      // 0-5 for integration time settings
-extern volatile uint8_t led_state;               // 0 = OFF, 1 = ON
+// GLOBALNE ZMIENNE
+extern volatile uint8_t current_gain_index;      // INDEKS GAIN
+extern volatile uint8_t current_time_index;      // INDEKS CZASU INTEGRACJI
+extern volatile uint8_t led_state;               // STAN LED
 
-// Configuration tables (as per protocol specification)
+// DLUGOSCI TABLIC USTAWIEN
 #define GAIN_VALUES_COUNT 4
 #define TIME_VALUES_COUNT 6
 
-// Gain settings: 1x, 4x, 16x, 60x
+// TABLICA GAIN
 extern const uint8_t GAIN_TABLE[GAIN_VALUES_COUNT];
 
-// Integration time settings: 2.4ms, 24ms, 50ms, 101ms, 154ms, 700ms
+// TABLICA CZASU INTEGRACJI
 extern const uint16_t TIME_TABLE[TIME_VALUES_COUNT];
 
 
