@@ -9,7 +9,7 @@
 #include <stdio.h>
 
 // Global configuration variables
-volatile uint8_t current_gain_index = 1;      // Default: 4x gain
+volatile uint8_t current_gain_index = 0;      // Default: 4x gain
 volatile uint8_t current_time_index = 3;      // Default: 154ms integration
 volatile uint8_t led_state = 0;               // Default: LED OFF
 
@@ -29,13 +29,7 @@ const uint16_t TIME_TABLE[TIME_VALUES_COUNT] = {
     TCS34725_INTEGRATIONTIME_700MS  // Index 4
 };
 
-/**
- * @brief Format color data in ANS format (10-character zero-padded hex strings)
- * @param buffer Output buffer
- * @param buffer_size Size of output buffer
- * @param data Pointer to color data
- * @return Number of characters written
- */
+
 static int format_ans_data(char *buffer, size_t buffer_size,
 		TCS34725_Data_t *data) {
 	return snprintf(buffer, buffer_size, "ANS"
@@ -45,12 +39,8 @@ static int format_ans_data(char *buffer, size_t buffer_size,
 			"C%05u", data->r, data->g, data->b, data->c);
 }
 
-/**
- * @brief Konwertuje string cyfr ASCII na liczbę całkowitą
- * @param str Wskaźnik do stringu z cyframi ASCII
- * @return Przekonwertowana wartość lub -1 w przypadku błędu
- */
-int convert_char_to_int(char *str) {
+
+static int convert_char_to_int(char *str) {
 	int result = 0;
 	int len = strlen(str);
 	for (int i = 0; i < len; i++) {
@@ -62,13 +52,8 @@ int convert_char_to_int(char *str) {
 	return result;
 }
 
-/**
- * @brief Konwertuje string heksadecymalny ASCII na liczbę całkowitą
- * @param hex_str Wskaźnik do stringu hex (bez prefiksu 0x)
- * @param len Długość stringu hex
- * @return Przekonwertowana wartość lub 0 w przypadku błędu
- */
-uint16_t convert_hex_to_int(const char *hex_str, size_t len) {
+
+static uint16_t convert_hex_to_int(const char *hex_str, size_t len) {
 	uint16_t result = 0;
 	for (size_t i = 0; i < len; i++) {
 		result <<= 4;
@@ -83,49 +68,39 @@ uint16_t convert_hex_to_int(const char *hex_str, size_t len) {
 	return result;
 }
 
-/**
- * @brief Get integration time in milliseconds for given index
- * @param index Integration time index (0-5)
- * @return Integration time in ms, or 0 if invalid index
- */
-uint16_t get_integration_time_ms(uint8_t index) {
+
+static uint16_t get_integration_time_ms(uint8_t index) {
     switch (index) {
-        case 0: return 3;   // 2.4ms rounded up
+        case 0: return 3;   // 2.4ms
         case 1: return 24;  // 24ms
         case 2: return 101; // 101ms
         case 3: return 154; // 154ms
         case 4: return 700; // 700ms
-        default: return 0;  // Invalid index
+        default: return 0;
     }
 }
 
-/**
- * @brief Decode hex string to ASCII bytes
- * @param hex_str Input hex string (e.g., "5354415254")
- * @param output Output buffer for decoded bytes
- * @param output_size Size of output buffer
- * @return Number of decoded bytes, or -1 on error
- */
-int hex_decode_string(const char *hex_str, char *output, size_t output_size) {
+
+static int hex_decode_string(const char *hex_str, char *output, size_t output_size) {
 	if (!hex_str || !output || output_size == 0) {
 		return -1;
 	}
 
 	size_t hex_len = strlen(hex_str);
 	if (hex_len % 2 != 0) {
-		return -1; // Hex string must have even length
+		return -1;
 	}
 
 	size_t byte_count = hex_len / 2;
 	if (byte_count >= output_size) {
-		return -1; // Output buffer too small
+		return -1;
 	}
 
 	for (size_t i = 0; i < byte_count; i++) {
 		char hex_pair[3] = { hex_str[i * 2], hex_str[i * 2 + 1], '\0' };
 		uint16_t byte_val = convert_hex_to_int(hex_pair, 2);
 		if (byte_val == 0 && strcmp(hex_pair, "00") != 0) {
-			return -1; // Invalid hex character
+			return -1;
 		}
 		output[i] = (char) byte_val;
 	}
@@ -134,23 +109,17 @@ int hex_decode_string(const char *hex_str, char *output, size_t output_size) {
 	return (int) byte_count;
 }
 
-/**
- * @brief Encode ASCII string to hex string
- * @param input Input ASCII string
- * @param output Output buffer for hex string
- * @param output_size Size of output buffer
- * @return Number of hex characters written, or -1 on error
- */
-int hex_encode_string(const char *input, char *output, size_t output_size) {
+
+static int hex_encode_string(const char *input, char *output, size_t output_size) {
 	if (!input || !output || output_size == 0) {
 		return -1;
 	}
 
 	size_t input_len = strlen(input);
-	size_t required_size = input_len * 2 + 1; // 2 hex chars per byte + null terminator
+	size_t required_size = input_len * 2 + 1;
 
 	if (required_size > output_size) {
-		return -1; // Output buffer too small
+		return -1;
 	}
 
 	for (size_t i = 0; i < input_len; i++) {
@@ -161,11 +130,7 @@ int hex_encode_string(const char *input, char *output, size_t output_size) {
 	return (int) (input_len * 2);
 }
 
-/**
- * @brief Parsuje komendę z stringa i zwraca odpowiadający enum Command
- * @param command_str String z komendą
- * @return Command wartość enum
- */
+
 Command parse_command(const char *command_str) {
 	if (!command_str) {
 		return CMD_INVALID;
@@ -211,12 +176,8 @@ Command parse_command(const char *command_str) {
 	return CMD_INVALID;
 }
 
-/**
- * @brief Zwraca długość parametrów dla danej komendy
- * @param cmd Command enum
- * @return Długość parametrów w znakach, 0 jeśli komenda nie ma parametrów
- */
-uint8_t get_command_param_len(Command cmd) {
+
+static uint8_t get_command_param_len(Command cmd) {
 	switch (cmd) {
 	case SETINT_CMD:
 		return PARAM_LEN_SETINT;
@@ -236,19 +197,10 @@ uint8_t get_command_param_len(Command cmd) {
 	case GETLED_CMD:
 	case RDRAW_CMD:
 	default:
-		return 0; // Komendy bez parametrów
+		return 0;
 	}
 }
 
-/**
- * @brief Parsuje ramkę protokołu z bufora znaków
- * @param buffer Bufor zawierający dane do parsowania
- * @param len Długość bufora
- * @param frame Wskaźnik do struktury Frame do wypełnienia
- * @param response_buffer Bufor na odpowiedź błędu (jeśli potrzeba)
- * @param response_size Rozmiar bufora odpowiedzi
- * @return ParseResult - wynik parsowania
- */
 ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 		char *response_buffer, size_t response_size) {
 
@@ -336,6 +288,7 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 	memcpy(id_str, &buffer[pos], FIELD_ID_LEN);
 	id_str[FIELD_ID_LEN] = '\0';
 	frame->frame_id = convert_char_to_int(id_str);
+	if(frame->frame_id < 0) return PARSE_INVALID_FORMAT;
 	pos += FIELD_ID_LEN;
 
 	//Sprwdzanie czy długość ramki jest poprawna
@@ -477,10 +430,8 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 
 	uint8_t expected_param_len = get_command_param_len(cmd);
 
-	// Jeśli komenda nie ma parametrów, dane muszą być dokładnie równe nazwie komendy
 	if (expected_param_len == 0) {
 		if (frame->data_len != cmd_name_len) {
-			///Dlugosc danych nie jest rowna dlugosci nazwy komendy zwracanie bledu
 			if (response_buffer && response_size >= MAX_PAYLOAD_LEN
 					&& strlen(frame->sender) == FIELD_ADDR_LEN) {
 				bool valid_sender = true;
@@ -499,7 +450,6 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 			return PARSE_CMD_ERROR;
 		}
 	} else {
-		// Komenda ma parametry
 		size_t expected_total_len = cmd_name_len + expected_param_len;
 		if (frame->data_len != expected_total_len) {
 			if (response_buffer && response_size >= MAX_PAYLOAD_LEN
@@ -540,45 +490,31 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 	return PARSE_OK;
 }
 
-/**
- * @brief Oblicza CRC dla ramki protokołu
- * @param frame Wskaźnik do struktury Frame
- * @return Wartość CRC16
- *
- * CRC jest obliczane z pól: Nadawca + Odbiorca + Długość + ID + Dane
- * (bez znaków &, CRC oraz *)
- */
+
 uint16_t calculate_frame_crc(const Frame *frame) {
 	if (!frame)
 		return 0;
 
-	// Prepare buffer with data for CRC calculation
-	// CRC is calculated on the hex-encoded data as transmitted on wire
 	char crc_buffer[MAX_FRAME_LEN];
 	size_t pos = 0;
 
-	// Sender
 	memcpy(&crc_buffer[pos], frame->sender, FIELD_ADDR_LEN);
 	pos += FIELD_ADDR_LEN;
 
-	// Receiver
 	memcpy(&crc_buffer[pos], frame->receiver, FIELD_ADDR_LEN);
 	pos += FIELD_ADDR_LEN;
 
-	// Length (as 3 ASCII digits, representing hex-encoded data length)
 	char len_str[4];
-	int hex_data_len = frame->data_len * 2; // Hex-encoded length
+	int hex_data_len = frame->data_len * 2;
 	sprintf(len_str, "%03d", hex_data_len);
 	memcpy(&crc_buffer[pos], len_str, FIELD_DATA_LEN);
 	pos += FIELD_DATA_LEN;
 
-	// Frame ID (as 2 ASCII digits)
 	char id_str[3];
 	sprintf(id_str, "%02d", frame->frame_id);
 	memcpy(&crc_buffer[pos], id_str, FIELD_ID_LEN);
 	pos += FIELD_ID_LEN;
 
-	// Data (hex-encoded)
 	if (frame->data_len > 0) {
 		char hex_data[MAX_PAYLOAD_LEN * 2 + 1];
 		int hex_len = hex_encode_string(frame->data, hex_data,
@@ -589,21 +525,9 @@ uint16_t calculate_frame_crc(const Frame *frame) {
 		}
 	}
 
-	// Calculate CRC16-CCITT
 	return crc16_ccitt((const uint8_t*) crc_buffer, pos);
 }
 
-/**
- * @brief Buduje ramkę odpowiedzi protokołu
- * @param buffer Bufor wyjściowy na ramkę
- * @param buffer_size Rozmiar bufora wyjściowego
- * @param sender ID nadawcy odpowiedzi ("STM")
- * @param receiver ID odbiorcy odpowiedzi (nadawca oryginalnej ramki)
- * @param frame_id ID ramki odpowiedzi (taki sam jak w ramce wejściowej)
- * @param response_data Dane odpowiedzi (np. "OK" lub kod błędu)
- * @param error Kod błędu (ignorowany jeśli response_data != NULL)
- * @return true jeśli budowanie powiodło się, false w przypadku błędu
- */
 bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
 		const char *receiver, uint8_t frame_id, const char *response_data,
 		ErrorCode error) {
@@ -611,7 +535,6 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
 		return false;
 	}
 
-	// Przygotuj dane odpowiedzi
 	char raw_data[MAX_PAYLOAD_LEN];
 	size_t raw_data_len;
 
@@ -647,17 +570,15 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
 		raw_data_len = strlen(raw_data);
 	}
 
-	// Encode raw data to hex string for transmission
 	char hex_data[MAX_PAYLOAD_LEN * 2 + 1];
 	int hex_len = hex_encode_string(raw_data, hex_data, sizeof(hex_data));
 	if (hex_len < 0) {
-		return false; // Encoding failed
+		return false;
 	}
 
 	const char *data = hex_data;
 	size_t data_len = hex_len;
 
-	// Sprawdza czy dane zmieszczą się w buforze
 	size_t total_len = FIELD_START_LEN + FIELD_ADDR_LEN + FIELD_ADDR_LEN
 			+ FIELD_DATA_LEN +
 			FIELD_ID_LEN + data_len + FIELD_CRC_LEN + FIELD_END_LEN;
@@ -667,39 +588,30 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
 
 	size_t pos = 0;
 
-	// Znak startowy
 	buffer[pos++] = PROTOCOL_START_BYTE;
 
-	// Nadawca (3 znaki)
 	memcpy(&buffer[pos], sender, FIELD_ADDR_LEN);
 	pos += FIELD_ADDR_LEN;
 
-	// Odbiorca (3 znaki)
 	memcpy(&buffer[pos], receiver, FIELD_ADDR_LEN);
 	pos += FIELD_ADDR_LEN;
 
-	// Długość danych (3 cyfry ASCII)
 	char len_str[4];
 	sprintf(len_str, "%03d", data_len);
 	memcpy(&buffer[pos], len_str, FIELD_DATA_LEN);
 	pos += FIELD_DATA_LEN;
 
-	// ID ramki (2 cyfry ASCII)
 	char id_str[3];
 	sprintf(id_str, "%02d", frame_id);
 	memcpy(&buffer[pos], id_str, FIELD_ID_LEN);
 	pos += FIELD_ID_LEN;
 
-	// Dane odpowiedzi (hex-encoded)
 	memcpy(&buffer[pos], data, data_len);
 	pos += data_len;
 
-	// Oblicz CRC dla całej ramki (bez & i *)
 	char crc_buffer[MAX_FRAME_LEN - 2];
 	size_t crc_pos = 0;
 
-	// Kopiuj pola do bufora CRC (od nadawcy do danych)
-	// Note: CRC is calculated on the hex-encoded data as transmitted
 	memcpy(&crc_buffer[crc_pos], sender, FIELD_ADDR_LEN);
 	crc_pos += FIELD_ADDR_LEN;
 	memcpy(&crc_buffer[crc_pos], receiver, FIELD_ADDR_LEN);
@@ -713,32 +625,23 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
 
 	uint16_t crc = crc16_ccitt((const uint8_t*) crc_buffer, crc_pos);
 
-	// CRC jako 4 znaki hex ASCII (Big Endian)
 	sprintf(&buffer[pos], "%04X", crc);
 	pos += FIELD_CRC_LEN;
 
-	// Znak końcowy
 	buffer[pos++] = PROTOCOL_END_BYTE;
 
-	// Zakończ string
 	buffer[pos] = '\0';
 
 	return true;
 }
 
-/**
- * @brief Przetwarza odebraną kompletną ramkę protokołu
- * @param buffer Bufor zawierający kompletną ramkę
- * @param len Długość bufora
- */
+
 void process_received_frame(const char *buffer, uint16_t len) {
 	Frame frame;
 	char response[MAX_FRAME_LEN];
 	ParseResult result = parse_frame(buffer, len, &frame, response,
 			sizeof(response));
-
 	if (result == PARSE_OK) {
-		// Handle command processing
 		process_command(&frame, response, sizeof(response));
 	} else if (result == PARSE_CRC_ERROR) {
 		if (strlen(response) > 0) {
@@ -786,9 +689,7 @@ void process_received_frame(const char *buffer, uint16_t len) {
 	//PARSE_TOO_SHORT, PARSE_WRONG_RECIPIENT, PARSE_FORBIDDEN_CHARS ingorowanie bez odpowiedzi
 }
 
-/**
- * @brief Przetwarza dane protokołu z bufora UART używając maszyny stanów
- */
+
 void process_protocol_data(void) {
 	static char frame_buffer[MAX_FRAME_LEN];
 	static size_t buffer_pos = 0;
@@ -971,19 +872,13 @@ void process_protocol_data(void) {
 	}
 }
 
-/**
- * @brief Process parsed command frame
- * @param frame Pointer to parsed frame structure
- * @param response_buffer Buffer for response
- * @param response_size Size of response buffer
- */
+
 void process_command(Frame *frame, char *response_buffer, size_t response_size) {
 	char data_buffer[MAX_PAYLOAD_LEN];
 	ErrorCode error = 0;
 
 	switch (frame->command) {
 	case START_CMD:
-		// Start data collection
 		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 				frame->sender, frame->frame_id, RESP_OK, 0)) {
 			HAL_TIM_Base_Start_IT(&htim3);
@@ -992,7 +887,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		break;
 
 	case STOP_CMD:
-		// Stop data collection
 		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 				frame->sender, frame->frame_id, RESP_OK, 0)) {
 			HAL_TIM_Base_Stop_IT(&htim3);
@@ -1001,7 +895,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		break;
 
 	case RDRAW_CMD:
-		// Read raw sensor data in ANS format
 	{
 		ColorBufferEntry_t *latest = ColorBuffer_GetLatest();
 		if (latest != NULL) {
@@ -1011,7 +904,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 				UART_TX_FSend("%s", response_buffer);
 			}
 		} else {
-			// No data collected yet (START command not executed)
 			sprintf(data_buffer, NODATA_STR);
 			if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 					frame->sender, frame->frame_id, data_buffer, 0)) {
@@ -1022,12 +914,10 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		break;
 
 	case RDARC_CMD:
-		// Read archived data by time offset (5 digits)
 	{
 		if (frame->params_len != PARAM_LEN_RDARC) {
 			error = WRLEN;
 		} else {
-			// Parse time offset parameter (5 ASCII digits)
 			uint32_t time_offset = 0;
 			for (int i = 0; i < 5; i++) {
 				char digit = frame->params[i];
@@ -1039,11 +929,10 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 			}
 
 			if (!error) {
-				// Validate time offset range: 00001 - Tmax = 600 * Tint
 				extern volatile uint32_t timer_interval;
 				uint32_t max_offset = COLOR_BUFFER_SIZE * timer_interval;
 				if (time_offset == 0 || time_offset > max_offset) {
-					error = WRPOS; // Invalid time offset range
+					error = WRPOS;
 				} else {
 					ColorBufferEntry_t *entry = ColorBuffer_GetByTimeOffset(
 							time_offset);
@@ -1056,7 +945,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 							UART_TX_FSend("%s", response_buffer);
 						}
 					} else {
-						// No data found for given time offset
 						sprintf(data_buffer, NODATA_STR);
 						if (build_response_frame(response_buffer, response_size,
 						DEVICE_ID, frame->sender, frame->frame_id, data_buffer,
@@ -1079,12 +967,10 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 
 
 	case SETINT_CMD:
-		// Set collection interval (5 digits)
 	{
 		if (frame->params_len != PARAM_LEN_SETINT) {
 			error = WRLEN;
 		} else {
-			// Parse interval parameter (5 ASCII digits)
 			uint32_t new_interval = 0;
 			for (int i = 0; i < 5; i++) {
 				char digit = frame->params[i];
@@ -1094,16 +980,13 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 				}
 				new_interval = new_interval * 10 + (digit - '0');
 			}
-
 			if (!error && new_interval > 0) {
-				// Check if new interval is longer than current integration time
 				uint16_t integration_time = get_integration_time_ms(current_time_index);
 				if (new_interval <= integration_time) {
-					error = WRTIME; // Interval must be longer than integration time
+					error = WRTIME;
 				} else {
 					extern volatile uint32_t timer_interval;
 					timer_interval = new_interval;
-
 					if (build_response_frame(response_buffer, response_size,
 					DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
 						UART_TX_FSend("%s", response_buffer);
@@ -1124,7 +1007,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		break;
 
 	case GETINT_CMD:
-		// Get current collection interval
 	{
 		extern volatile uint32_t timer_interval;
 		sprintf(data_buffer, INT_PREFIX "%05lu", timer_interval);
@@ -1136,7 +1018,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		break;
 
 	case SETGAIN_CMD:
-		// Set gain index (1 digit: 0-3)
 	{
 		if (frame->params_len != PARAM_LEN_SETGAIN) {
 			error = WRLEN;
@@ -1164,10 +1045,8 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		break;
 
 	case GETGAIN_CMD:
-		// Get current gain index
 	{
 		sprintf(data_buffer, GAIN_PREFIX "%01u", current_gain_index);
-		TCS34725_WriteReg(&hi2c1, TCS34725_ATIME, TIME_TABLE[current_time_index]);
 		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 				frame->sender, frame->frame_id, data_buffer, 0)) {
 			UART_TX_FSend("%s", response_buffer);
@@ -1176,7 +1055,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		break;
 
 	case SETTIME_CMD:
-		// Set integration time index (1 digit: 0-5)
 	{
 		if (frame->params_len != PARAM_LEN_SETTIME) {
 			error = WRLEN;
@@ -1184,15 +1062,12 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 			char time_char = frame->params[0];
 			if (time_char >= '0' && time_char <= '4') {
 				uint8_t new_time_index = time_char - '0';
-
-				// Check if current timer interval is longer than new integration time
 				extern volatile uint32_t timer_interval;
 				uint16_t new_integration_time = get_integration_time_ms(new_time_index);
 				if (timer_interval <= new_integration_time) {
-					error = WRTIME; // Timer interval must be longer than integration time
+					error = WRTIME;
 				} else {
 					current_time_index = new_time_index;
-					// Apply integration time setting to TCS34725 sensor
 					TCS34725_WriteReg(&hi2c1, TCS34725_ATIME, TIME_TABLE[new_time_index]);
 					if (build_response_frame(response_buffer, response_size,
 					DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
@@ -1214,7 +1089,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		break;
 
 	case GETTIME_CMD:
-		// Get current integration time index
 	{
 		sprintf(data_buffer, TIME_PREFIX "%01u", current_time_index);
 		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
@@ -1225,7 +1099,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		break;
 
 	case SETLED_CMD:
-		// Set LED state (1 digit: '0' = OFF, '1' = ON)
 	{
 		if (frame->params_len != PARAM_LEN_SETLED) {
 			error = WRLEN;
@@ -1233,14 +1106,11 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 			char led_char = frame->params[0];
 			if (led_char == '0' || led_char == '1') {
 				led_state = led_char - '0';
-
-				// Apply LED state to hardware (PC3 GPIO pin)
 				if (led_state == 1) {
 					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_SET);
 				} else {
 					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_RESET);
 				}
-
 				if (build_response_frame(response_buffer, response_size,
 				DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
 					UART_TX_FSend("%s", response_buffer);
@@ -1260,9 +1130,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		break;
 
 	case GETLED_CMD:
-		// Get current LED state
 	{
-		// Read actual LED state from hardware (PC3)
 		GPIO_PinState actual_state = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_3);
 		uint8_t actual_led_state = (actual_state == GPIO_PIN_SET) ? 1 : 0;
 
@@ -1275,7 +1143,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 	break;
 
 	default:
-		// Unknown command
 		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 				frame->sender, frame->frame_id, NULL, WRCMD)) {
 			UART_TX_FSend("%s", response_buffer);

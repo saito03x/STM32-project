@@ -32,5 +32,5 @@ uint16_t crc16_ccitt(const uint8_t* buffer, size_t size)
     {
     	crc = (crc << 8) ^ ccitt_hash[((crc >> 8) ^ *(buffer++)) & 0x00FF];
     }
-    return crc;  // Brak końcowego XOR (0x0000)
+    return crc;
 }

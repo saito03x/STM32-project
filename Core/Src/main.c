@@ -132,10 +132,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-   //Przetwarzanie znakow ktore przychodza do bufora kolejki UART
     process_protocol_data();
-
-    // Handle TCS34725 sensor state machine
     TCS34725_HandleLoop(&hi2c1);
 
     /* USER CODE END WHILE */
@@ -197,14 +194,10 @@ void SystemClock_Config(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	if(htim->Instance == TIM3){
 		timer_counter++;
-
 		if (timer_counter >= timer_interval) {
-			// Start DMA read of sensor data (non-blocking)
 			TCS34725_Start_DMA_Read(&hi2c1);
-
 			timer_counter=0;
 		}
-
 	}
 }
 

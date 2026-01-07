@@ -36,13 +36,11 @@ uint8_t UART_RX_GetLine(char *buf);
 
 void UART_TX_FSend(char* format, ...);
 
-uint8_t ColorBuffer_IsEmpty(void);
 uint8_t ColorBuffer_IsFull(void);
 uint32_t ColorBuffer_GetCount(void);
 uint8_t ColorBuffer_Put(TCS34725_Data_t *data, uint32_t timestamp);
 ColorBufferEntry_t* ColorBuffer_GetLatest(void);
 ColorBufferEntry_t* ColorBuffer_GetByTimeOffset(uint32_t timeOffsetMs);
-void ColorBuffer_Clear(void);
 
 
 

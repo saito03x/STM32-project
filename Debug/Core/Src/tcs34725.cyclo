@@ -1,6 +1,7 @@
-../Core/Src/tcs34725.c:14:6:TCS34725_WriteReg	1
-../Core/Src/tcs34725.c:22:16:TCS34725_ReadReg8	1
-../Core/Src/tcs34725.c:36:9:TCS34725_Init	2
-../Core/Src/tcs34725.c:68:6:TCS34725_ReadRawData	1
-../Core/Src/tcs34725.c:92:6:TCS34725_Start_DMA_Read	3
-../Core/Src/tcs34725.c:121:6:HAL_I2C_MemRxCpltCallback	2
+../Core/Src/tcs34725.c:13:6:TCS34725_WriteReg	1
+../Core/Src/tcs34725.c:20:16:TCS34725_ReadReg8	1
+../Core/Src/tcs34725.c:31:9:TCS34725_Init	2
+../Core/Src/tcs34725.c:49:6:TCS34725_ReadRawData	1
+../Core/Src/tcs34725.c:62:6:TCS34725_HandleLoop	3
+../Core/Src/tcs34725.c:71:6:TCS34725_Start_DMA_Read	4
+../Core/Src/tcs34725.c:93:6:HAL_I2C_MemRxCpltCallback	2
