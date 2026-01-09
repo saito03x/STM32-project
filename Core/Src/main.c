@@ -49,11 +49,10 @@
 
 /* Private variables ---------------------------------------------------------*/
 
+/* USER CODE BEGIN PV */
+
 volatile uint32_t timer_interval = 1000;
 volatile uint32_t timer_counter = 0;
-
-/* USER CODE BEGIN PV */
-TCS34725_Data_t colorData;
 
 /* USER CODE END PV */
 
@@ -121,8 +120,9 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C1_Init();
   MX_TIM3_Init();
-  TCS34725_Init(&hi2c1);
+  
   /* USER CODE BEGIN 2 */
+  TCS34725_Init(&hi2c1);
   HAL_UART_Receive_IT(&huart2,&UART_RxBuf[0],1);
   UART_TX_FSend("STM INIT\n");
 

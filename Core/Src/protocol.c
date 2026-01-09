@@ -8,10 +8,11 @@
 #include <string.h>
 #include <stdio.h>
 
-// Global configuration variables
-volatile uint8_t current_gain_index = 0;      // Default: 4x gain
+volatile uint8_t current_gain_index = 0;      // Default: 1x gain
 volatile uint8_t current_time_index = 3;      // Default: 154ms integration
 volatile uint8_t led_state = 0;               // Default: LED OFF
+
+extern volatile uint32_t timer_interval;
 
 
 const uint8_t GAIN_TABLE[GAIN_VALUES_COUNT] = {
@@ -22,13 +23,26 @@ const uint8_t GAIN_TABLE[GAIN_VALUES_COUNT] = {
 };
 
 const uint16_t TIME_TABLE[TIME_VALUES_COUNT] = {
-    TCS34725_INTEGRATIONTIME_2_4MS, // Index 0
-    TCS34725_INTEGRATIONTIME_24MS,  // Index 1
-    TCS34725_INTEGRATIONTIME_101MS, // Index 2
-    TCS34725_INTEGRATIONTIME_154MS, // Index 3
-    TCS34725_INTEGRATIONTIME_700MS  // Index 4
+    TCS34725_INTEGRATIONTIME_2_4MS,
+    TCS34725_INTEGRATIONTIME_24MS,
+    TCS34725_INTEGRATIONTIME_101MS,
+    TCS34725_INTEGRATIONTIME_154MS,
+    TCS34725_INTEGRATIONTIME_700MS,
 };
 
+
+
+static uint8_t is_valid_sender(const char *sender) {
+	if (strlen(sender) != FIELD_ADDR_LEN) {
+		return 0;
+	}
+	for (int i = 0; i < FIELD_ADDR_LEN; i++) {
+		if (sender[i] == PROTOCOL_START_BYTE || sender[i] == PROTOCOL_END_BYTE) {
+			return 0;
+		}
+	}
+	return 1;
+}
 
 static int format_ans_data(char *buffer, size_t buffer_size,
 		TCS34725_Data_t *data) {
@@ -79,7 +93,6 @@ static uint16_t get_integration_time_ms(uint8_t index) {
         default: return 0;
     }
 }
-
 
 static int hex_decode_string(const char *hex_str, char *output, size_t output_size) {
 	if (!hex_str || !output || output_size == 0) {
@@ -177,7 +190,7 @@ Command parse_command(const char *command_str) {
 }
 
 
-static uint8_t get_command_param_len(Command cmd) {
+uint8_t get_command_param_len(Command cmd) {
 	switch (cmd) {
 	case SETINT_CMD:
 		return PARAM_LEN_SETINT;
@@ -200,6 +213,7 @@ static uint8_t get_command_param_len(Command cmd) {
 		return 0;
 	}
 }
+
 
 ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 		char *response_buffer, size_t response_size) {
@@ -237,7 +251,7 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 	size_t header_end = start_pos + 1 + FIELD_ADDR_LEN + FIELD_ADDR_LEN
 			+ FIELD_DATA_LEN + FIELD_ID_LEN;
 	for (size_t i = start_pos + 1; i < header_end && i < len; i++) {
-		if (buffer[i] == '&' || buffer[i] == '*') {
+		if (buffer[i] == PROTOCOL_START_BYTE || buffer[i] == PROTOCOL_END_BYTE) {
 			return PARSE_FORBIDDEN_CHARS;
 		}
 	}
@@ -295,30 +309,26 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 	if (pos + frame->data_len > len) {
 		return PARSE_INVALID_FORMAT;
 	}
+
 	if (frame->data_len > 0) {
-		// Extract hex-encoded data field
-		char hex_data[MAX_PAYLOAD_LEN + 1];
+		char hex_data[(MAX_PAYLOAD_LEN * 2) + 1];
 		memcpy(hex_data, &buffer[pos], frame->data_len);
 		hex_data[frame->data_len] = '\0';
-
-		// Validate hex data length (must be even)
 		if (frame->data_len % 2 != 0) {
 			return PARSE_LENGTH_MISMATCH;
 		}
 
-		// Decode hex string to ASCII
+		//Dekodowanie napisu w HEX ASCII na zanki ASCII
 		int decoded_len = hex_decode_string(hex_data, frame->data,
 				sizeof(frame->data));
 		if (decoded_len < 0) {
 			return PARSE_INVALID_FORMAT;
 		}
-
-		// Update data length to decoded length
 		frame->data_len = decoded_len;
 	}
-	pos += (frame->data_len * 2); // Skip the original hex data in buffer (2 hex chars per byte)
 
-	//Sprwdzanie czy długość ramki jest poprawna
+	pos += (frame->data_len * 2);
+
 	if (pos + FIELD_CRC_LEN > len - 1) {
 		return PARSE_INVALID_FORMAT;
 	}
@@ -329,7 +339,7 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 
 	//Sprawdza zabornione znaki w crc
 	for (size_t i = pos; i < pos + FIELD_CRC_LEN; i++) {
-		if (buffer[i] == '&' || buffer[i] == '*') {
+		if (buffer[i] == PROTOCOL_START_BYTE || buffer[i] == PROTOCOL_END_BYTE) {
 			return PARSE_FORBIDDEN_CHARS;
 		}
 	}
@@ -351,15 +361,7 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 	if (calculated_crc != frame->crc) {
 		if (response_buffer && response_size >= MAX_PAYLOAD_LEN
 				&& strlen(frame->sender) == FIELD_ADDR_LEN) {
-			bool valid_sender = true;
-			for (int i = 0; i < FIELD_ADDR_LEN; i++) {
-				char c = frame->sender[i];
-				if (c == '&' || c == '*') {
-					valid_sender = false;
-					break;
-				}
-			}
-			if (valid_sender) {
+			if (is_valid_sender(frame->sender)) {
 				build_response_frame(response_buffer, response_size, DEVICE_ID,
 						frame->sender, frame->frame_id, NULL, WRCHSUM);
 			}
@@ -380,19 +382,9 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 	if (cmd_name_len == 0) {
 		// Brak nazwy komendy
 		if (response_buffer && response_size >= MAX_PAYLOAD_LEN
-				&& strlen(frame->sender) == FIELD_ADDR_LEN) {
-			bool valid_sender = true;
-			for (int i = 0; i < FIELD_ADDR_LEN; i++) {
-				char c = frame->sender[i];
-				if (c == '&' || c == '*') {
-					valid_sender = false;
-					break;
-				}
-			}
-			if (valid_sender) {
-				build_response_frame(response_buffer, response_size, DEVICE_ID,
-						frame->sender, frame->frame_id, NULL, WRCMD);
-			}
+				&& is_valid_sender(frame->sender)) {
+			build_response_frame(response_buffer, response_size, DEVICE_ID,
+					frame->sender, frame->frame_id, NULL, WRCMD);
 		}
 		return PARSE_CMD_ERROR;
 	}
@@ -411,19 +403,9 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 	if (cmd == CMD_INVALID) {
 		//Nieznana komenda
 		if (response_buffer && response_size >= MAX_PAYLOAD_LEN
-				&& strlen(frame->sender) == FIELD_ADDR_LEN) {
-			bool valid_sender = true;
-			for (int i = 0; i < FIELD_ADDR_LEN; i++) {
-				char c = frame->sender[i];
-				if (c == '&' || c == '*') {
-					valid_sender = false;
-					break;
-				}
-			}
-			if (valid_sender) {
-				build_response_frame(response_buffer, response_size, DEVICE_ID,
-						frame->sender, frame->frame_id, NULL, WRCMD);
-			}
+				&& is_valid_sender(frame->sender)) {
+			build_response_frame(response_buffer, response_size, DEVICE_ID,
+					frame->sender, frame->frame_id, NULL, WRCMD);
 		}
 		return PARSE_CMD_ERROR;
 	}
@@ -433,19 +415,9 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 	if (expected_param_len == 0) {
 		if (frame->data_len != cmd_name_len) {
 			if (response_buffer && response_size >= MAX_PAYLOAD_LEN
-					&& strlen(frame->sender) == FIELD_ADDR_LEN) {
-				bool valid_sender = true;
-				for (int i = 0; i < FIELD_ADDR_LEN; i++) {
-					char c = frame->sender[i];
-					if (c == '&' || c == '*') {
-						valid_sender = false;
-						break;
-					}
-				}
-				if (valid_sender) {
-					build_response_frame(response_buffer, response_size,
-					DEVICE_ID, frame->sender, frame->frame_id, NULL, WRCMD);
-				}
+					&& is_valid_sender(frame->sender)) {
+				build_response_frame(response_buffer, response_size,
+				DEVICE_ID, frame->sender, frame->frame_id, NULL, WRCMD);
 			}
 			return PARSE_CMD_ERROR;
 		}
@@ -453,19 +425,9 @@ ParseResult parse_frame(const char *buffer, size_t len, Frame *frame,
 		size_t expected_total_len = cmd_name_len + expected_param_len;
 		if (frame->data_len != expected_total_len) {
 			if (response_buffer && response_size >= MAX_PAYLOAD_LEN
-					&& strlen(frame->sender) == FIELD_ADDR_LEN) {
-				bool valid_sender = true;
-				for (int i = 0; i < FIELD_ADDR_LEN; i++) {
-					char c = frame->sender[i];
-					if (c == '&' || c == '*') {
-						valid_sender = false;
-						break;
-					}
-				}
-				if (valid_sender) {
-					build_response_frame(response_buffer, response_size,
-					DEVICE_ID, frame->sender, frame->frame_id, NULL, WRLEN);
-				}
+					&& is_valid_sender(frame->sender)) {
+				build_response_frame(response_buffer, response_size,
+				DEVICE_ID, frame->sender, frame->frame_id, NULL, WRLEN);
 			}
 			return PARSE_LENGTH_MISMATCH;
 		}
@@ -528,20 +490,18 @@ uint16_t calculate_frame_crc(const Frame *frame) {
 	return crc16_ccitt((const uint8_t*) crc_buffer, pos);
 }
 
-bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
+uint8_t build_response_frame(char *buffer, size_t buffer_size, const char *sender,
 		const char *receiver, uint8_t frame_id, const char *response_data,
 		ErrorCode error) {
 	if (!buffer || !sender || buffer_size < MIN_FRAME_LEN) {
-		return false;
+		return 0;
 	}
 
 	char raw_data[MAX_PAYLOAD_LEN];
-	size_t raw_data_len;
 
 	if (response_data != NULL) {
 		strncpy(raw_data, response_data, sizeof(raw_data) - 1);
 		raw_data[sizeof(raw_data) - 1] = '\0';
-		raw_data_len = strlen(raw_data);
 	} else {
 		switch (error) {
 		case WRCHSUM:
@@ -567,13 +527,12 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
 			break;
 		}
 		raw_data[sizeof(raw_data) - 1] = '\0';
-		raw_data_len = strlen(raw_data);
 	}
 
 	char hex_data[MAX_PAYLOAD_LEN * 2 + 1];
 	int hex_len = hex_encode_string(raw_data, hex_data, sizeof(hex_data));
 	if (hex_len < 0) {
-		return false;
+		return 0;
 	}
 
 	const char *data = hex_data;
@@ -583,7 +542,7 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
 			+ FIELD_DATA_LEN +
 			FIELD_ID_LEN + data_len + FIELD_CRC_LEN + FIELD_END_LEN;
 	if (total_len > buffer_size) {
-		return false;
+		return 0;
 	}
 
 	size_t pos = 0;
@@ -609,6 +568,7 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
 	memcpy(&buffer[pos], data, data_len);
 	pos += data_len;
 
+	//Bez poczatku i konca ramki
 	char crc_buffer[MAX_FRAME_LEN - 2];
 	size_t crc_pos = 0;
 
@@ -632,7 +592,7 @@ bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
 
 	buffer[pos] = '\0';
 
-	return true;
+	return 1;
 }
 
 
@@ -648,20 +608,10 @@ void process_received_frame(const char *buffer, uint16_t len) {
 			UART_TX_FSend("%s", response);
 		}
 	} else if (result == PARSE_LENGTH_MISMATCH) {
-		if (strlen(frame.sender) == FIELD_ADDR_LEN) {
-			bool valid_sender = true;
-			for (int i = 0; i < FIELD_ADDR_LEN; i++) {
-				char ch = frame.sender[i];
-				if (ch == '&' || ch == '*') {
-					valid_sender = false;
-					break;
-				}
-			}
-			if (valid_sender) {
-				if (build_response_frame(response, sizeof(response), DEVICE_ID,
-						frame.sender, frame.frame_id, NULL, WRLEN)) {
-					UART_TX_FSend("%s", response);
-				}
+		if (is_valid_sender(frame.sender)) {
+			if (build_response_frame(response, sizeof(response), DEVICE_ID,
+					frame.sender, frame.frame_id, NULL, WRLEN)) {
+				UART_TX_FSend("%s", response);
 			}
 		}
 	} else if (result == PARSE_CMD_ERROR) {
@@ -669,20 +619,10 @@ void process_received_frame(const char *buffer, uint16_t len) {
 			UART_TX_FSend("%s", response);
 		}
 	} else if (result == PARSE_INVALID_FORMAT) {
-		if (strlen(frame.sender) == FIELD_ADDR_LEN) {
-			bool valid_sender = true;
-			for (int i = 0; i < FIELD_ADDR_LEN; i++) {
-				char ch = frame.sender[i];
-				if (ch == '&' || ch == '*') {
-					valid_sender = false;
-					break;
-				}
-			}
-			if (valid_sender) {
-				if (build_response_frame(response, sizeof(response), DEVICE_ID,
-						frame.sender, 0, NULL, WRFRM)) {
-					UART_TX_FSend("%s", response);
-				}
+		if (is_valid_sender(frame.sender)) {
+			if (build_response_frame(response, sizeof(response), DEVICE_ID,
+					frame.sender, 0, NULL, WRFRM)) {
+				UART_TX_FSend("%s", response);
 			}
 		}
 	}
@@ -699,7 +639,7 @@ void process_protocol_data(void) {
 	static size_t data_pos = 0;            // Pozycja w danych
 	static size_t crc_pos = 0;             // Pozycja w CRC
 
-	// Przetwarzaj wszystkie dostępne znaki z bufora
+	// Przetwarza wszystkie dostępne znaki z bufora
 	while (!UART_RX_IsEmpty()) {
 		int16_t received_char = UART_RX_GetChar();
 		if (received_char == -1) {
@@ -746,20 +686,6 @@ void process_protocol_data(void) {
 					>= FIELD_ADDR_LEN + FIELD_ADDR_LEN + FIELD_DATA_LEN
 							+ FIELD_ID_LEN) {
 
-				//Zapisanie pol nagłówka do odpowiednich zmiennych
-				char sender[FIELD_ADDR_LEN + 1];
-				char receiver[FIELD_ADDR_LEN + 1];
-				char id_str[FIELD_ID_LEN + 1];
-				memcpy(sender, &frame_buffer[1], FIELD_ADDR_LEN);
-				sender[FIELD_ADDR_LEN] = '\0';
-				memcpy(receiver, &frame_buffer[1 + FIELD_ADDR_LEN],
-				FIELD_ADDR_LEN);
-				receiver[FIELD_ADDR_LEN] = '\0';
-				memcpy(id_str,
-						&frame_buffer[1 + FIELD_ADDR_LEN + FIELD_ADDR_LEN
-								+ FIELD_DATA_LEN], FIELD_ID_LEN);
-				id_str[FIELD_ID_LEN] = '\0';
-
 				// Parsuj długość danych z nagłówka
 				char len_str[FIELD_DATA_LEN + 1];
 				// Kopiowanie danych z bufora do len_str
@@ -773,7 +699,7 @@ void process_protocol_data(void) {
 
 				// Sprawdza poprawność długości
 				if (expected_data_len < 0 || expected_data_len > MAX_PAYLOAD_LEN) {
-					// Błędna długość i reset do IDLE
+					// Błędna długość i reset
 					state = STATE_IDLE;
 					buffer_pos = 0;
 					break;
@@ -786,9 +712,7 @@ void process_protocol_data(void) {
 			break;
 
 		case STATE_DATA:
-			// Check for new frame start byte (resynchronization)
 			if (c == PROTOCOL_START_BYTE) {
-				// Start of new frame detected - reset parser and begin new frame
 				buffer_pos = 0;
 				frame_buffer[buffer_pos++] = c;
 				header_pos = 0;
@@ -811,13 +735,6 @@ void process_protocol_data(void) {
 
 			// Sprawdza czy odebrano wszystkie dane
 			if (data_pos >= expected_data_len) {
-				//Zapisanie danych do odpowiedniej zmiennej
-				size_t data_start = 1 + FIELD_ADDR_LEN + FIELD_ADDR_LEN
-						+ FIELD_DATA_LEN + FIELD_ID_LEN;
-				char data_str[MAX_PAYLOAD_LEN + 1];
-				memcpy(data_str, &frame_buffer[data_start], expected_data_len);
-				data_str[expected_data_len] = '\0';
-
 				// Przejscie do pobierania CRC
 				crc_pos = 0;
 				state = STATE_CRC_END;
@@ -837,13 +754,8 @@ void process_protocol_data(void) {
 
 			// Sprawdza czy przyszedł znak końca ramki
 			if (c == PROTOCOL_END_BYTE) {
-				// Dodaje gwiazdke do bufora, aby parse_frame widzialo komplet
 				frame_buffer[buffer_pos++] = c;
-
-				// Przekazuje do przetworzenia
 				process_received_frame(frame_buffer, buffer_pos);
-
-				// Resetuje stan
 				state = STATE_IDLE;
 				buffer_pos = 0;
 				crc_pos = 0;
@@ -918,18 +830,10 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		if (frame->params_len != PARAM_LEN_RDARC) {
 			error = WRLEN;
 		} else {
-			uint32_t time_offset = 0;
-			for (int i = 0; i < 5; i++) {
-				char digit = frame->params[i];
-				if (digit < '0' || digit > '9') {
-					error = WRCMD;
-					break;
-				}
-				time_offset = time_offset * 10 + (digit - '0');
-			}
-
-			if (!error) {
-				extern volatile uint32_t timer_interval;
+			int time_offset = convert_char_to_int(frame->params);
+			if (time_offset < 0) {
+				error = WRCMD;
+			} else {
 				uint32_t max_offset = COLOR_BUFFER_SIZE * timer_interval;
 				if (time_offset == 0 || time_offset > max_offset) {
 					error = WRPOS;
@@ -971,29 +875,20 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 		if (frame->params_len != PARAM_LEN_SETINT) {
 			error = WRLEN;
 		} else {
-			uint32_t new_interval = 0;
-			for (int i = 0; i < 5; i++) {
-				char digit = frame->params[i];
-				if (digit < '0' || digit > '9') {
-					error = WRCMD;
-					break;
-				}
-				new_interval = new_interval * 10 + (digit - '0');
-			}
-			if (!error && new_interval > 0) {
+			int new_interval = convert_char_to_int(frame->params);
+			if (new_interval <= 0) {
+				error = WRCMD;
+			} else {
 				uint16_t integration_time = get_integration_time_ms(current_time_index);
-				if (new_interval <= integration_time) {
+				if ((uint32_t)new_interval <= integration_time) {
 					error = WRTIME;
 				} else {
-					extern volatile uint32_t timer_interval;
 					timer_interval = new_interval;
 					if (build_response_frame(response_buffer, response_size,
 					DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
 						UART_TX_FSend("%s", response_buffer);
 					}
 				}
-			} else {
-				error = WRCMD;
 			}
 		}
 
@@ -1008,7 +903,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 
 	case GETINT_CMD:
 	{
-		extern volatile uint32_t timer_interval;
 		sprintf(data_buffer, INT_PREFIX "%05lu", timer_interval);
 		if (build_response_frame(response_buffer, response_size, DEVICE_ID,
 				frame->sender, frame->frame_id, data_buffer, 0)) {
@@ -1025,7 +919,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 			char gain_char = frame->params[0];
 			if (gain_char >= '0' && gain_char <= '3') {
 				current_gain_index = gain_char - '0';
-				TCS34725_WriteReg(&hi2c1, TCS34725_CONTROL, current_gain_index);
+				TCS34725_WriteReg(&hi2c1, TCS34725_CONTROL, GAIN_TABLE[current_gain_index]);
 				if (build_response_frame(response_buffer, response_size,
 				DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
 					UART_TX_FSend("%s", response_buffer);
@@ -1062,7 +956,6 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 			char time_char = frame->params[0];
 			if (time_char >= '0' && time_char <= '4') {
 				uint8_t new_time_index = time_char - '0';
-				extern volatile uint32_t timer_interval;
 				uint16_t new_integration_time = get_integration_time_ms(new_time_index);
 				if (timer_interval <= new_integration_time) {
 					error = WRTIME;
@@ -1106,11 +999,7 @@ void process_command(Frame *frame, char *response_buffer, size_t response_size) 
 			char led_char = frame->params[0];
 			if (led_char == '0' || led_char == '1') {
 				led_state = led_char - '0';
-				if (led_state == 1) {
-					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_SET);
-				} else {
-					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_RESET);
-				}
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, led_state ? GPIO_PIN_SET : GPIO_PIN_RESET);
 				if (build_response_frame(response_buffer, response_size,
 				DEVICE_ID, frame->sender, frame->frame_id, RESP_OK, 0)) {
 					UART_TX_FSend("%s", response_buffer);

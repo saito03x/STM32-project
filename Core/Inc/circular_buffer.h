@@ -24,7 +24,7 @@ typedef struct {
 
 extern ColorBufferEntry_t ColorBuffer[COLOR_BUFFER_SIZE];
 extern volatile uint32_t ColorBuffer_WritePos;
-extern volatile uint8_t ColorBuffer_DataAvailable;  // Flag indicating if data collection started
+extern volatile uint8_t ColorBuffer_DataAvailable;
 
 extern volatile uint32_t timer_interval;
 
@@ -32,12 +32,8 @@ uint8_t UART_RX_IsEmpty(void);
 
 int16_t UART_RX_GetChar(void);
 
-uint8_t UART_RX_GetLine(char *buf);
-
 void UART_TX_FSend(char* format, ...);
 
-uint8_t ColorBuffer_IsFull(void);
-uint32_t ColorBuffer_GetCount(void);
 uint8_t ColorBuffer_Put(TCS34725_Data_t *data, uint32_t timestamp);
 ColorBufferEntry_t* ColorBuffer_GetLatest(void);
 ColorBufferEntry_t* ColorBuffer_GetByTimeOffset(uint32_t timeOffsetMs);

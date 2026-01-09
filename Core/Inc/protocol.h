@@ -2,7 +2,6 @@
 #define PROTOCOL_H
 
 #include <stdint.h>
-#include <stdbool.h>
 #include <stddef.h>
 
 //Znaki sterujące
@@ -124,7 +123,7 @@ typedef struct {
     char receiver[FIELD_ADDR_LEN+1];
     uint16_t data_len;
     uint8_t frame_id;
-    char data[MAX_PAYLOAD_LEN + 1];
+    char data[(MAX_PAYLOAD_LEN * 2) + 1];
     Command command;
     char params[MAX_PAYLOAD_LEN + 1];  
     uint8_t params_len;                
@@ -132,16 +131,13 @@ typedef struct {
 } Frame;
 
 
-int convert_char_to_int(char *str);
-uint16_t convert_hex_to_int(const char *hex_str, size_t len);
-int hex_decode_string(const char *hex_str, char *output, size_t output_size);
-int hex_encode_string(const char *input, char *output, size_t output_size);
 Command parse_command(const char *command_str);
 uint8_t get_command_param_len(Command cmd);
 ParseResult parse_frame(const char *buffer, size_t len, Frame *frame, char *response_buffer, size_t response_size);
 uint16_t calculate_frame_crc(const Frame *frame);
-bool build_response_frame(char *buffer, size_t buffer_size, const char *sender,
+uint8_t build_response_frame(char *buffer, size_t buffer_size, const char *sender,
                          const char *receiver, uint8_t frame_id, const char *response_data, ErrorCode error);
+void process_command(Frame *frame, char *response_buffer, size_t response_size);
 void process_protocol_data(void);
 
 // GLOBALNE ZMIENNE
